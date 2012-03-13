@@ -1,8 +1,8 @@
 "
 " File: w3m.vim
 " Author: yuratomo
-" Last Modified: 2012.02.19
-" Version: 0.0.2
+" Last Modified: 2012.02.29
+" Version: 0.0.3
 "
 " Usage:
 "
@@ -40,6 +40,10 @@
 "           以下のコマンドを追加
 "             :W3mTab              を追加(新しいタブで開く)
 "             :W3mCopyUrl          クリップボードにURLをコピー
+"    v0.0.3 ハイライトを"syntax match"ではなく"call matchadd"に変更し、
+"           範囲指定によりマッチさせるように変更
+"           cursorlineはハイライト行で処理が遅くなるので削除
+"           <b>と<u>の対応を入れた。
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -64,6 +68,10 @@ if !exists('g:w3m#max_history_num')
 endif
 if !exists('g:w3m#debug')
   let g:w3m#debug = 0
+endif
+if !executable(g:w3m#command)
+  echoerr "w3m is not exist!!"
+  finish
 endif
 
 let s:w3m_title = 'w3m'
@@ -277,7 +285,7 @@ function! s:openCurrentHistory()
   call setline(1, b:display_lines)
   call s:message('done')
   call s:applySyntax()
-  setlocal bt=nofile noswf cursorline nomodifiable nowrap hidden 
+  setlocal bt=nofile noswf nomodifiable nowrap hidden 
 endfunction
 
 function! s:analizeOutputs(output_lines)
@@ -428,35 +436,59 @@ function! s:keymap()
 endfunction
 
 function! s:applySyntax()
-  try 
-    syn clear w3mLink
-  catch /.*/
-  endtry
+" try 
+"   syn clear w3mLink
+" catch /.*/
+" endtry
+  call clearmatches()
+  hi w3mBold gui=bold
+  hi w3mUnderline gui=underline
 
   let input_image_s = -1
   let link_s = -1
+  let bold_s = -1
+  let underline_s = -1
   for tag in b:tag_list
     if link_s == -1 && tag.tagname == 'a' && tag.type == s:TAG_START
-      let link_s = tag.col
+      if tag.col > 0
+        let link_s = tag.col -1
+      else
+        let link_s = 0
+      endif
     elseif link_s != -1 && tag.tagname == 'a' && tag.type == s:TAG_END
-      let link = s:escapeSyntax(strpart(getline(tag.line), link_s-1, tag.col-link_s))
-      if strlen(link) > 1
-        exe 'syn match w3mLink "' . link . '"'
-      else
-        exe 'syn match w3mLink "\<' . link . '\>"'
-      endif
-      "call s:ddd("highligh(l)!! " . link)
+      let link_e = tag.col
+      call matchadd('w3mLink', '\%>'.link_s.'c\%<'.link_e.'c\%'.tag.line.'l')
       let link_s = -1
-    elseif input_image_s == -1 && s:is_tag_input_image_submit(tag) && tag.type == s:TAG_START
-      let input_image_s = tag.col
-    elseif input_image_s != -1 && stridx(tag.tagname, 'input') == 0 && tag.type == s:TAG_END
-      let input_image_submit = s:escapeSyntax(strpart(getline(tag.line), input_image_s-1, tag.col-input_image_s))
-      if strlen(input_image_submit) > 1
-        exe 'syn match w3mSubmit "' . input_image_submit . '"'
+
+    elseif bold_s == -1 && tag.tagname == 'b' && tag.type == s:TAG_START
+      if tag.col > 0
+        let bold_s = tag.col -1
       else
-        exe 'syn match w3mSubmit "\<' . input_image_submit . '\>"'
+        let bold_s = 0
       endif
-      "call s:ddd("highligh(s)!! " . input_image_submit)
+    elseif bold_s != -1 && tag.tagname == 'b' && tag.type == s:TAG_END
+      let bold_e = tag.col
+      call matchadd('w3mBold', '\%>'.bold_s.'c\%<'.bold_e.'c\%'.tag.line.'l')
+
+    elseif underline_s == -1 && tag.tagname == 'u' && tag.type == s:TAG_START
+      if tag.col > 0
+        let underline_s = tag.col -1
+      else
+        let underline_s = 0
+      endif
+    elseif underline_s != -1 && tag.tagname == 'u' && tag.type == s:TAG_END
+      let underline_e = tag.col
+      call matchadd('w3mUnderline', '\%>'.underline_s.'c\%<'.underline_e.'c\%'.tag.line.'l')
+
+    elseif input_image_s == -1 && s:is_tag_input_image_submit(tag) && tag.type == s:TAG_START
+      if tag.col > 0
+        let input_image_s = tag.col -1
+      else
+        let input_image_s = 0
+      endif
+    elseif input_image_s != -1 && stridx(tag.tagname, 'input') == 0 && tag.type == s:TAG_END
+      let input_image_e = tag.col
+      call matchadd('w3mSubmit', '\%>'.input_image_s.'c\%<'.input_image_e.'c\%'.tag.line.'l')
       let input_image_s = -1
     endif
   endfor

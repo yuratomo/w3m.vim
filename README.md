@@ -14,7 +14,7 @@ Usage
 ###Open URL At New Tab:###
     input :W3mTab [url or keyword]
 
-###Copy URL To Clipboar:###
+###Copy URL To Clipboard:###
     input :W3mCopyUrl
 
 ###Reload Current Page:###
@@ -45,4 +45,13 @@ Settings
 
 ###Set Home Page:###
     let g:w3m#homepage = "http://www.google.co.jp/"
+
+ScreenShots
+-----------
+
+###Sample Image1###
+![sample1](http://yuratomo.up.seesaa.net/image/w3mvim_v0.4.0.001.png "sample1")
+
+###Hit-A-Hint###
+![sample1](http://yuratomo.up.seesaa.net/image/w3mvim_v0.4.0.002.png "sample1")
 

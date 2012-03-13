@@ -1,7 +1,7 @@
 "
 " File: w3m.vim
-" Last Modified: 2012.03.07
-" Version: 0.0.6
+" Last Modified: 2012.03.09
+" Version: 0.2.0
 " Author: yuratomo
 "
 " Usage:
@@ -14,6 +14,9 @@
 "
 "   Copy URL To Clipboar:
 "     input :W3mCopyUrl
+"
+"   Reload current page:
+"     input :W3mReload
 "
 " Setting:
 "   highlight! link w3mLink StatusLineNC
@@ -57,6 +60,13 @@
 "           ・w3mLinkのハイライト定義がないとエラーになる件修正
 "           ・w3mを開いたウィンドウにmatch指定が残る問題修正
 "           　また、他のウィンドウでw3mのバッファを開くとmatchが消える問題修正
+"    v0.2.0 ・input type=radio/checkbox 対応
+"           ・2chみたいにa href=http://bar/見たいな属性がある場合に対応
+"           ・リロード機能(:W3mReload)追加
+"           ・属性の解析がおかしかったので修正
+"
+" TODO:
+"           ・matchがhlsearchより優先されるのでその対策
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -101,7 +111,8 @@ let [s:TAG_START,s:TAG_END,s:TAG_BOTH,s:TAG_UNKNOWN] = range(4)
 
 command! -nargs=* W3m :call w3m#Open(<f-args>)
 command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
-command! -nargs=* W3mCopyUrl :call w3m#W3mCopyUrl('*')
+command! -nargs=* W3mCopyUrl :call w3m#CopyUrl('*')
+command! -nargs=* W3mReload :call w3m#Reload()
 
 function! w3m#BufWinEnter()
   call s:applySyntax()
@@ -139,6 +150,8 @@ function! w3m#Debug()
   endfor
   call setline(didx, '--------- dbgmsg --------')
   let didx += 1
+  call setline(didx, 'query=' . s:buildQueryString())
+  let didx += 1
   call setline(didx, b:debug_msg)
   let didx += 1
 
@@ -161,11 +174,22 @@ function! w3m#ShowURL()
   endif
 endfunction
 
-function! w3m#W3mCopyUrl(to)
+function! w3m#CopyUrl(to)
   if exists('b:last_url')
     call setreg(a:to, b:last_url)
   endif
 endfunction
+
+function! w3m#Reload()
+  if exists('b:last_url')
+    call w3m#Open(b:last_url)
+  endif
+endfunction
+
+"xxx
+"function! w3m#ApplyHighlitSearch()
+"  call matchadd("Search", histget("search", -1))
+"endfunction
 
 function! w3m#OpenAtNewTab(...)
   tabe
@@ -285,7 +309,8 @@ function! w3m#Click(shift)
       break
     endif
     if b:tag_list[tidx].type != s:TAG_START
-      break
+      let tidx -= 1
+      continue
     endif
     let b:click_with_shift = a:shift
     let ret = s:dispatchTagProc(b:tag_list[tidx].tagname, tidx)
@@ -345,7 +370,8 @@ function! s:analizeOutputs(output_lines)
               \ 'tagname':tname,
               \ 'attr':attr,
               \ 'evalue':'',
-              \ 'edited':0
+              \ 'edited':0,
+              \ 'echecked':0
               \ }
           call add(b:tag_list, item)
           if stridx(tname,'input') == 0
@@ -369,7 +395,7 @@ endfunction
 
 function! s:resolvTagType(tag)
   if stridx(a:tag, '<') == 0
-    if stridx(a:tag, '/>') >= 0
+    if stridx(a:tag, '/>') >= 0 && match(a:tag, '=\a') == -1
       return s:TAG_BOTH
     elseif stridx(a:tag, '</') == 0
       return s:TAG_END
@@ -382,47 +408,50 @@ endfunction
 
 function! s:analizeTag(tag, attr)
   let tagname_e = stridx(a:tag, ' ') - 1
+  let taglen = strlen(a:tag)
   if tagname_e < 0
     if a:tag[1:1] == '/'
-      return tolower(strpart(a:tag, 2, strlen(a:tag)-3))
+      return tolower(strpart(a:tag, 2, taglen-3))
     else
-      return tolower(strpart(a:tag, 1, strlen(a:tag)-2))
+      return tolower(strpart(a:tag, 1, taglen-2))
     endif
   endif
 
   let tagname = tolower(strpart(a:tag, 1, tagname_e))
-  let idx = 0
+  let idx = tagname_e + 2
   while 1
-    " find start of value (vs)
-    let vs = stridx(a:tag, '"', idx)
-    if vs == -1
+    if idx >= taglen
       break
     endif
-    let vs += 1
 
-    " find end of value (ve)
-    let ve = stridx(a:tag, '"', vs)
-    if ve == -1
-      break
+    let na = stridx(a:tag, ' ', idx)
+    let eq = stridx(a:tag, '=', idx)
+    if eq == -1 || eq > na
+      if na == -1
+        if eq == -1
+          let a:attr[tolower(strpart(a:tag, idx, taglen-idx-1))] = ''
+          break
+        endif
+        let na = taglen - 1
+      else " no value key
+        let a:attr[tolower(strpart(a:tag, idx, na-idx))] = ''
+        let idx = na + 1
+        continue
+      endif
     endif
-    let ve -= 1
 
-    " find start of key (ks)
-    let ks = strridx(a:tag, ' ', vs)
-    if ks == -1
-      break
+    let vs = eq+1
+    if a:tag[vs] == '"'
+      let vs += 1
+      let ve = na - 2
+    else
+      let ve = na - 1
     endif
-    let ks += 1
-
-    " find end of key (ke)
-    let ke = stridx(a:tag, '=', ks)
-    if ke == -1
-      break
-    endif
-    let ke -= 1
+    let ks = idx
+    let ke = eq - 1
 
     let a:attr[tolower(strpart(a:tag, ks, ke-ks+1))] = s:decordeEntRef(strpart(a:tag, vs, ve-vs+1))
-    let idx = ve + 2
+    let idx = na + 1
   endwhile
 
   return tagname
@@ -660,6 +689,52 @@ function! s:tag_input_password(tidx)
     call s:applyEditedInputValues()
 endfunction
 
+function! s:tag_input_radio(tidx)
+  redraw
+  " 他の同じnameのecheckedをリセット
+  for item in b:form_list
+    if has_key(item, 'type') && item.type ==? 'radio'
+      let item.edited = 1
+      let item.echecked = 0
+    endif
+  endfor
+
+  let b:tag_list[a:tidx].echecked = 1
+  if has_key(b:tag_list[a:tidx].attr, 'value')
+    let value = b:tag_list[a:tidx].attr.value
+  else
+    let value = ''
+  endif
+  let b:tag_list[a:tidx].evalue = value
+  call s:applyEditedInputValues()
+endfunction
+
+function! s:tag_input_checkbox(tidx)
+  redraw
+  if b:tag_list[a:tidx].edited == 1
+    if b:tag_list[a:tidx].echecked == 1
+      let b:tag_list[a:tidx].echecked = 0
+    else
+      let b:tag_list[a:tidx].echecked = 1
+    endif
+  else
+    let b:tag_list[a:tidx].edited = 1
+    if has_key(b:tag_list[a:tidx], 'checked')
+      let b:tag_list[a:tidx].echecked = 0
+    else
+      let b:tag_list[a:tidx].echecked = 1
+    endif
+  endif
+  let b:tag_list[a:tidx].echecked = 1
+  if has_key(b:tag_list[a:tidx].attr, 'value')
+    let value = b:tag_list[a:tidx].attr.value
+  else
+    let value = ''
+  endif
+  let b:tag_list[a:tidx].evalue = value
+  call s:applyEditedInputValues()
+endfunction
+
 function! s:tag_input_reset(tidx)
   for item in b:form_list
     if s:is_editable_tag(item)
@@ -703,9 +778,22 @@ function! s:buildQueryString()
   let first = 1
   for item in b:form_list
     if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
-      if has_key(item.attr,'type') && item.attr.type == 'submit'
-        continue
+      if has_key(item.attr,'type')
+        if item.attr.type == 'submit'
+          continue
+        elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
+          if item.edited == 1
+            if item.echecked == 0
+              continue
+            endif
+          else
+            if !has_key(item.attr, 'checked')
+              continue
+            endif
+          endif
+        endif
       endif
+
       if first == 1
         let query .= '?'
         let first = 0
@@ -729,6 +817,22 @@ function! s:generatePostFile()
 
   for item in b:form_list
     if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
+      if has_key(item.attr,'type')
+        if item.attr.type == 'submit'
+          continue
+        elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
+          if item.edited == 1
+            if item.echecked == 0
+              continue
+            endif
+          else
+            if !has_key(item.attr, 'checked')
+              continue
+            endif
+          endif
+        endif
+      endif
+
       if item.edited == 0
         let value = item.attr.value
       else
@@ -771,6 +875,27 @@ function! s:applyEditedInputValues()
       setlocal modifiable
       call setline(item.line, line)
       setlocal nomodifiable
+
+    elseif s:is_radio_checkbox(item)
+      if item.edited == 1
+        if item.echecked == 1
+          let value = '*'
+        else
+          let value = ' '
+        endif
+      else 
+        if has_key(item.attr, 'checked')
+          let value = '*'
+        else
+          let value = ' '
+        endif
+      endif
+      let line = getline(item.line)
+      let line = strpart(line, 0, item.col-1) . value . strpart(line, item.col)
+      setlocal modifiable
+      call setline(item.line, line)
+      setlocal nomodifiable
+
     endif
   endfor
 endfunction
@@ -884,6 +1009,15 @@ endfunction
 function! s:is_editable_tag(tag)
   if has_key(a:tag.attr,'name') && has_key(a:tag.attr,'type') && a:tag.tagname ==? 'input_alt'
     if a:tag.attr.type ==? 'text' || a:tag.attr.type ==? 'textarea'
+      return 1
+    endif
+  endif
+  return 0
+endfunction
+
+function! s:is_radio_checkbox(tag)
+  if has_key(a:tag.attr,'name') && has_key(a:tag.attr,'type') && a:tag.tagname ==? 'input_alt'
+    if a:tag.attr.type ==? 'radio' || a:tag.attr.type ==? 'checkbox'
       return 1
     endif
   endif

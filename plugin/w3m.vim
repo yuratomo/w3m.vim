@@ -1,14 +1,27 @@
 "
 " File: w3m.vim
 " Author: yuratomo
-" Last Modified: 2012.02.17
-" Version: 0.0.1
-" Usage: input :W3m [url or keyword]
+" Last Modified: 2012.02.19
+" Version: 0.0.2
+"
+" Usage:
+"
+"   Open URL:
+"     input :W3m [url or keyword]
+"
+"   Open URL At New Tab:
+"     input :W3mTab [url or keyword]
+"
+"   Copy URL To Clipboar:
+"     input :W3mCopyUrl
 "
 " Setting:
 "   highlight! link w3mLink StatusLineNC
 "   highlight! link w3mInput String
 "   highlight! link w3mSubmit Title
+"
+"   "Use Proxy
+"   let &HTTP_PROXY='http://xxx.xxx/:8080'
 "
 " Default Keymap:
 "   <CR>      Open link under the cursor.
@@ -19,6 +32,14 @@
 "   <BS>      Back page.
 "   <A-LEFT>  Back page.
 "   <A-RIGHT> Forward page.
+"
+" History:
+"    v0.0.1 first version
+"    v0.0.2 listchars=はグローバルなので設定しないように修正
+"           URLオープン中にw3mのコマンドではなく、URLを表示するように修正。
+"           以下のコマンドを追加
+"             :W3mTab              を追加(新しいタブで開く)
+"             :W3mCopyUrl          クリップボードにURLをコピー
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -52,6 +73,8 @@ let s:tmp_option = ''
 let [s:TAG_START,s:TAG_END,s:TAG_BOTH,s:TAG_UNKNOWN] = range(4)
 
 command! -nargs=* W3m :call w3m#Open(<f-args>)
+command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
+command! -nargs=* W3mCopyUrl :call w3m#W3mCopyUrl('*')
 
 function! w3m#Debug()
   setlocal modifiable
@@ -98,7 +121,20 @@ function! w3m#ShowUsage()
 endfunction
 
 function! w3m#ShowURL()
+  if exists('b:last_url')
     call s:message(b:last_url)
+  endif
+endfunction
+
+function! w3m#W3mCopyUrl(to)
+  if exists('b:last_url')
+    call setreg(a:to, b:last_url)
+  endif
+endfunction
+
+function! w3m#OpenAtNewTab(...)
+  tabe
+  call w3m#Open(join(a:000, ' '))
 endfunction
 
 function! w3m#Open(...)
@@ -121,7 +157,7 @@ function! w3m#Open(...)
   let cols = winwidth(0) - &numberwidth
   let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ')
   call add(b:url_history, url)
-  call s:message( strpart('connect ' . cmdline, 0, cols - s:message_adjust) )
+  call s:message( strpart('connect ' . url, 0, cols - s:message_adjust) )
   call add(b:outputs_history, split(system(cmdline), '\n'))
   let b:history_index = len(b:url_history) - 1
   if b:history_index >= g:w3m#max_history_num
@@ -241,7 +277,7 @@ function! s:openCurrentHistory()
   call setline(1, b:display_lines)
   call s:message('done')
   call s:applySyntax()
-  setlocal bt=nofile noswf cursorline nomodifiable nowrap hidden listchars= 
+  setlocal bt=nofile noswf cursorline nomodifiable nowrap hidden 
 endfunction
 
 function! s:analizeOutputs(output_lines)
@@ -429,7 +465,7 @@ function! s:applySyntax()
 endfunction
 
 function! s:escapeSyntax(str)
-  return escape(a:str, '"\|*-[]')
+  return escape(a:str, '~"\|*-[]')
 endfunction
 
 function! s:dispatchTagProc(tagname, tidx)

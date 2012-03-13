@@ -15,16 +15,27 @@
 "   Copy URL To Clipboar:
 "     input :W3mCopyUrl
 "
-"   Reload current page:
+"   Reload Current Page:
 "     input :W3mReload
 "
-" Setting:
-"   highlight! link w3mLink StatusLineNC
-"   highlight! link w3mSubmit Title
-"   highlight! link w3mInput String
+"   Change Url:
+"     input :W3mAddressBar
 "
-"   "Use Proxy
-"   let &HTTP_PROXY='http://xxx.xxx/:8080'
+" Setting:
+"
+"   Hilight:
+"     highlight! link w3mLink   StatusLineNC
+"     highlight! link w3mSubmit Title
+"     highlight! link w3mInput  String
+"
+"   Use Proxy:
+"     let &HTTP_PROXY='http://xxx.xxx/:8080'
+"
+"   Set External Browser:
+"     let g:w3m#external_browser = 'chrome'
+"
+"   Set Home Page:
+"     let g:w3m#homepage = "http://www.google.co.jp/"
 "
 " Default Keymap:
 "   <CR>      Open link under the cursor.
@@ -36,6 +47,7 @@
 "   <BS>      Back page.
 "   <A-LEFT>  Back page.
 "   <A-RIGHT> Forward page.
+"   =         Show href under the cursor.
 "
 " History:
 "    v0.0.1 ・first version
@@ -64,9 +76,18 @@
 "           ・2chみたいにa href=http://bar/見たいな属性がある場合に対応
 "           ・リロード機能(:W3mReload)追加
 "           ・属性の解析がおかしかったので修正
+"    v0.2.1 ・属性解析ロジック不具合修正
+"           ・<a href='xxx'みたいにシングルクォートが使われている場合に対応
+"    v0.3.0 ・:W3mAddressBarを追加
+"           ・:W3mShowTitle (タイトル表示)追加
+"           ・:W3mShowExtenalBrowser (外部ブラウザ表示)追加
+"           ・:W3mShowSource (ソースの表示)追加
+"           ・ホームページ指定機能追加 (g:w3m#homepage = ...)
+"           ・カーソル下のリンクのURLを表示する機能追加(=)
 "
 " TODO:
 "           ・matchがhlsearchより優先されるのでその対策
+"           ・履歴一覧
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -88,12 +109,15 @@ endif
 if !exists('g:w3m#download_ext')
   let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z' ]
 endif
-if !exists('g:w3m#search_engin')
-  let g:w3m#search_engin = 
+if !exists('g:w3m#search_engine')
+  let g:w3m#search_engine = 
     \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=SHIFT_JIS&aq=&oq=&p='
 endif
 if !exists('g:w3m#max_history_num')
   let g:w3m#max_history_num = 10
+endif
+if !exists('g:w3m#external_browser')
+  let g:w3m#external_browser = 'chrome'
 endif
 if !exists('g:w3m#debug')
   let g:w3m#debug = 0
@@ -113,6 +137,10 @@ command! -nargs=* W3m :call w3m#Open(<f-args>)
 command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
 command! -nargs=* W3mCopyUrl :call w3m#CopyUrl('*')
 command! -nargs=* W3mReload :call w3m#Reload()
+command! -nargs=* W3mAddressBar :call w3m#EditAddress()
+command! -nargs=* W3mShowTitle :call w3m#ShowTitle()
+command! -nargs=* W3mShowExtenalBrowser :call w3m#ShowExternalBrowser()
+command! -nargs=* W3mShowSource :call w3m#ShowSourceAndHeader()
 
 function! w3m#BufWinEnter()
   call s:applySyntax()
@@ -120,6 +148,42 @@ endfunction
 
 function! w3m#BufWinLeave()
   call clearmatches()
+endfunction
+
+function! w3m#CheckUnderCursor()
+  let [cl,cc] = [ line('.'), col('.') ]
+  let tstart = -1
+  let tidx = 0
+  for tag in b:tag_list
+    if tag.line == cl && tag.col > cc
+      let tstart = tidx - 1
+      break
+    endif
+    let tidx = tidx + 1
+  endfor
+  if tstart == -1
+    return
+  endif
+
+  let tidx = tstart
+  while tidx >= 0
+    if b:tag_list[tidx].line != cl
+      let tidx = -1
+      break
+    endif
+    if b:tag_list[tidx].type != s:TAG_START
+      let tidx -= 1
+      continue
+    endif
+    if has_key(b:tag_list[tidx].attr, 'href')
+      break
+    endif
+    let tidx -= 1
+  endwhile
+
+  if tidx >= 0
+    echo b:tag_list[tidx].attr.href
+  endif
 endfunction
 
 function! w3m#Debug()
@@ -168,6 +232,33 @@ function! w3m#ShowUsage()
   echo "example :W3m http://www.yahoo.co.jp"
 endfunction
 
+function! w3m#ShowTitle()
+  if exists('b:last_url')
+    let title = "no title"
+    for tag in b:tag_list
+      if tag.type == s:TAG_START && tag.tagname ==? 'title_alt' && has_key(tag.attr, 'title')
+        let title = tag.attr.title
+        break
+      endif
+    endfor
+    call s:message(title)
+  endif
+endfunction
+
+function! w3m#ShowSourceAndHeader()
+  if exists('b:last_url')
+    let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '"' . b:last_url . '"' ], ' ')
+    new
+    execute '%!'.substitute(cmdline, "-halfdump", "-dump_both", "")
+  endif
+endfunction
+
+function! w3m#ShowExternalBrowser()
+  if exists('g:w3m#external_browser') && exists('b:last_url')
+    call system(g:w3m#external_browser . ' "' . b:last_url . '"')
+  endif
+endfunction
+
 function! w3m#ShowURL()
   if exists('b:last_url')
     call s:message(b:last_url)
@@ -186,6 +277,13 @@ function! w3m#Reload()
   endif
 endfunction
 
+function! w3m#EditAddress()
+  if exists('b:last_url')
+    let url = input('url:', b:last_url)
+    call w3m#Open(url)
+  endif
+endfunction
+
 "xxx
 "function! w3m#ApplyHighlitSearch()
 "  call matchadd("Search", histget("search", -1))
@@ -198,7 +296,11 @@ endfunction
 
 function! w3m#Open(...)
   if len(a:000) == 0
-    call w3m#ShowUsage()
+    if exists('g:w3m#homepage')
+      call w3m#Open(g:w3m#homepage)
+    else
+      call w3m#ShowUsage()
+    endif
     return
   endif
 
@@ -207,7 +309,7 @@ function! w3m#Open(...)
   if s:isHttpURL(a:000[0])
     let url = s:normalizeUrl(a:000[0])
   else
-    let url = g:w3m#search_engin . join(a:000, ' ')
+    let url = g:w3m#search_engine . join(a:000, ' ')
   endif
   if len(b:url_history) - 1 > b:history_index
     call remove(b:url_history, b:history_index+1, -1)
@@ -216,7 +318,7 @@ function! w3m#Open(...)
   let cols = winwidth(0) - &numberwidth
   let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ')
   call add(b:url_history, url)
-  call s:message( strpart('connect ' . url, 0, cols - s:message_adjust) )
+  call s:message( strpart('open ' . url, 0, cols - s:message_adjust) )
   call add(b:outputs_history, split(system(cmdline), '\n'))
   let b:history_index = len(b:url_history) - 1
   if b:history_index >= g:w3m#max_history_num
@@ -319,7 +421,9 @@ function! w3m#Click(shift)
     endif
     let tidx -= 1
   endwhile
-  call s:message('done')
+
+  "call s:message('done')
+  call w3m#ShowTitle()
 endfunction
 
 function! s:post(url, file)
@@ -337,7 +441,9 @@ function! s:openCurrentHistory()
   call clearmatches()
   % delete _
   call setline(1, b:display_lines)
-  call s:message('done')
+  "call s:message('done')
+  call w3m#ShowTitle()
+
   call s:applySyntax()
   setlocal bt=nofile noswf nomodifiable nowrap hidden 
 endfunction
@@ -429,21 +535,29 @@ function! s:analizeTag(tag, attr)
     if eq == -1 || eq > na
       if na == -1
         if eq == -1
-          let a:attr[tolower(strpart(a:tag, idx, taglen-idx-1))] = ''
+          let key = strpart(a:tag, idx, taglen-idx-1)
+          if key != ""
+            let a:attr[tolower(key)] = ''
+          endif
           break
         endif
         let na = taglen - 1
       else " no value key
-        let a:attr[tolower(strpart(a:tag, idx, na-idx))] = ''
+        let key = strpart(a:tag, idx, na-idx)
+        if key != ""
+          let a:attr[tolower(key)] = ''
+        endif
         let idx = na + 1
         continue
       endif
     endif
 
     let vs = eq+1
-    if a:tag[vs] == '"'
+    if a:tag[vs] == '"' || a:tag[vs] == "'"
+      let ee = stridx(a:tag, a:tag[vs], vs+1) " end quate
       let vs += 1
-      let ve = na - 2
+      let ve = ee - 1
+      let na = ee + 1
     else
       let ve = na - 1
     endif
@@ -498,6 +612,7 @@ function! s:keymap()
     nnoremap <buffer> <BS> :call w3m#Back()<CR>
     nnoremap <buffer> <A-LEFT> :call w3m#Back()<CR>
     nnoremap <buffer> <A-RIGHT> :call w3m#Forward()<CR>
+    nnoremap <buffer> = :call w3m#CheckUnderCursor()<CR>
   endif
 endfunction
 
@@ -876,7 +991,7 @@ function! s:applyEditedInputValues()
       call setline(item.line, line)
       setlocal nomodifiable
 
-    elseif s:is_radio_checkbox(item)
+    elseif s:is_radio_or_checkbox(item)
       if item.edited == 1
         if item.echecked == 1
           let value = '*'
@@ -1015,7 +1130,7 @@ function! s:is_editable_tag(tag)
   return 0
 endfunction
 
-function! s:is_radio_checkbox(tag)
+function! s:is_radio_or_checkbox(tag)
   if has_key(a:tag.attr,'name') && has_key(a:tag.attr,'type') && a:tag.tagname ==? 'input_alt'
     if a:tag.attr.type ==? 'radio' || a:tag.attr.type ==? 'checkbox'
       return 1

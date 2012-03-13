@@ -1,7 +1,7 @@
 "
 " File: w3m.vim
-" Last Modified: 2012.03.06
-" Version: 0.0.5
+" Last Modified: 2012.03.07
+" Version: 0.0.6
 " Author: yuratomo
 "
 " Usage:
@@ -53,6 +53,10 @@
 "    v0.0.5 ・googleのホームから検索できない件修正(input submitをくえりーからはずす)
 "           ・テキストエリアのアンダーラインが変だったので修正
 "           ・wgetによるzipファイルなどのダウンロード対応
+"    v0.1.0 ・a href= にルートからの相対パスが指定されているとリンクがたどれない件修正
+"           ・w3mLinkのハイライト定義がないとエラーになる件修正
+"           ・w3mを開いたウィンドウにmatch指定が残る問題修正
+"           　また、他のウィンドウでw3mのバッファを開くとmatchが消える問題修正
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -99,9 +103,14 @@ command! -nargs=* W3m :call w3m#Open(<f-args>)
 command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
 command! -nargs=* W3mCopyUrl :call w3m#W3mCopyUrl('*')
 
-function! w3m#ttt()
-  call setreg("*", b:last_url . s:buildQueryString())
+function! w3m#BufWinEnter()
+  call s:applySyntax()
 endfunction
+
+function! w3m#BufWinLeave()
+  call clearmatches()
+endfunction
+
 function! w3m#Debug()
   setlocal modifiable
 
@@ -441,6 +450,11 @@ function! s:prepare_buffer()
 
     call s:keymap()
     call s:default_highligh()
+
+    augroup w3m
+      au BufWinEnter <buffer> silent! call w3m#BufWinEnter()
+      au BufWinLeave <buffer> silent! call w3m#BufWinLeave()
+    augroup END
   endif
 endfunction
 
@@ -468,7 +482,7 @@ function! s:default_highligh()
     highlight! link w3mSubmit String
   endif
   if !hlexists('w3mLink')
-    highlight! link w3mSubmit String
+    highlight! link w3mLink String
   endif
 endfunction
 
@@ -660,13 +674,27 @@ endfunction
 "function! s:tag_input_xxx(tidx)
 "endfunction
 
-function! s:resolveUrl(action)
-  if s:isHttpURL(a:action)
-    return s:decordeEntRef(a:action)
+function! s:resolveUrl(url)
+  if s:isHttpURL(a:url)
+    return s:decordeEntRef(a:url)
   else
-    let base = strridx(b:last_url, '/')
+    if a:url[0] == '/'
+      let base = strlen(b:last_url) - 1
+      let tmp = stridx(b:last_url, '/')
+      if tmp != -1
+        let tmp = stridx(b:last_url, '/', tmp+1)
+        if tmp != -1
+          let tmp = stridx(b:last_url, '/', tmp+1)
+          if tmp != -1
+            let base = tmp - 1
+          endif
+        endif
+      endif
+    else
+      let base = strridx(b:last_url, '/')
+    endif
     let url = strpart(b:last_url, 0, base+1)
-    return url . s:decordeEntRef(a:action)
+    return url . s:decordeEntRef(a:url)
   endif
 endfunction
 

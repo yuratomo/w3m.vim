@@ -1,7 +1,7 @@
 "
 " File: w3m.vim
-" Last Modified: 2012.03.05
-" Version: 0.0.4
+" Last Modified: 2012.03.06
+" Version: 0.0.5
 " Author: yuratomo
 "
 " Usage:
@@ -47,9 +47,12 @@
 "           ・<b>と<u>の対応を入れた。
 "    v0.0.4 ・<a HREF=...>のように属性名が大文字だとうまくジャンプできない
 "             不具合修正
-"           ・w3mInputを[]でみないでinputタグで見るように修正
+"           ・w3mInputを[]で見ないでinputタグで見るように修正
 "           ・テキストエリアに入力時に[]からはみ出さないように修正。
 "           ・リンクの上で<S-CR>を押すと新しいタブで開くようにした。
+"    v0.0.5 ・googleのホームから検索できない件修正(input submitをくえりーからはずす)
+"           ・テキストエリアのアンダーラインが変だったので修正
+"           ・wgetによるzipファイルなどのダウンロード対応
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -63,7 +66,13 @@ if !exists('g:w3m#command')
   let g:w3m#command = 'w3m'
 endif
 if !exists('g:w3m#option')
-  let g:w3m#option = '-s -halfdump -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
+  let g:w3m#option = '-s -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
+endif
+if !exists('g:w3m#wget_command')
+  let g:w3m#wget_command = 'wget'
+endif
+if !exists('g:w3m#download_ext')
+  let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z' ]
 endif
 if !exists('g:w3m#search_engin')
   let g:w3m#search_engin = 
@@ -90,6 +99,9 @@ command! -nargs=* W3m :call w3m#Open(<f-args>)
 command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
 command! -nargs=* W3mCopyUrl :call w3m#W3mCopyUrl('*')
 
+function! w3m#ttt()
+  call setreg("*", b:last_url . s:buildQueryString())
+endfunction
 function! w3m#Debug()
   setlocal modifiable
 
@@ -131,7 +143,7 @@ endfunction
 
 function! w3m#ShowUsage()
   echo "[Usage] :W3m url"
-  echo "example :W3m http://www.google.co.jp"
+  echo "example :W3m http://www.yahoo.co.jp"
 endfunction
 
 function! w3m#ShowURL()
@@ -487,6 +499,7 @@ function! s:applySyntax()
     elseif bold_s != -1 && tag.tagname ==? 'b' && tag.type == s:TAG_END
       let bold_e = tag.col
       call matchadd('w3mBold', '\%>'.bold_s.'c\%<'.bold_e.'c\%'.tag.line.'l')
+      let bold_s = -1
 
     elseif underline_s == -1 && tag.tagname ==? 'u' && tag.type == s:TAG_START
       if tag.col > 0
@@ -497,6 +510,7 @@ function! s:applySyntax()
     elseif underline_s != -1 && tag.tagname ==? 'u' && tag.type == s:TAG_END
       let underline_e = tag.col
       call matchadd('w3mUnderline', '\%>'.underline_s.'c\%<'.underline_e.'c\%'.tag.line.'l')
+      let underline_s = -1
 
     elseif input_s == -1 && tag.tagname ==? 'input_alt' && tag.type == s:TAG_START
       if s:is_tag_input_image_submit(tag)
@@ -535,10 +549,14 @@ endfunction
 function! s:tag_a(tidx)
   if has_key(b:tag_list[a:tidx].attr,'href')
     let url = s:resolveUrl(b:tag_list[a:tidx].attr.href)
-    if b:click_with_shift == 1
-      call w3m#OpenAtNewTab(url)
+    if s:is_download_target(url)
+      call s:downloadFile(url)
     else
-      call w3m#Open(url)
+      if b:click_with_shift == 1
+        call w3m#OpenAtNewTab(url)
+      else
+        call w3m#Open(url)
+      endif
     endif
   endif
   return 1
@@ -657,6 +675,9 @@ function! s:buildQueryString()
   let first = 1
   for item in b:form_list
     if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
+      if has_key(item.attr,'type') && item.attr.type == 'submit'
+        continue
+      endif
       if first == 1
         let query .= '?'
         let first = 0
@@ -802,6 +823,23 @@ function! s:message(msg)
   if a:msg != ''
     echom 'w3m: ' . a:msg
   endif
+endfunction
+
+function! s:downloadFile(url)
+  if executable(g:w3m#wget_command)
+    let output_dir = input("save dir: ", expand("$HOME"), "dir")
+    call s:message('download ' . a:url)
+    echo system(g:w3m#wget_command . ' -P "' . output_dir . '" ' . a:url)
+  endif
+endfunction
+
+function! s:is_download_target(url)
+  let dot = strridx(a:url, '.')
+  let ext = strpart(a:url, dot+1)
+  if index(g:w3m#download_ext, tolower(ext)) >= 0
+    return 1
+  endif
+  return 0
 endfunction
 
 function! s:is_tag_input_image_submit(tag)

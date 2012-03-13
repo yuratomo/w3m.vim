@@ -1,8 +1,8 @@
 "
 " File: w3m.vim
+" Last Modified: 2012.03.05
+" Version: 0.0.4
 " Author: yuratomo
-" Last Modified: 2012.02.29
-" Version: 0.0.3
 "
 " Usage:
 "
@@ -17,14 +17,15 @@
 "
 " Setting:
 "   highlight! link w3mLink StatusLineNC
-"   highlight! link w3mInput String
 "   highlight! link w3mSubmit Title
+"   highlight! link w3mInput String
 "
 "   "Use Proxy
 "   let &HTTP_PROXY='http://xxx.xxx/:8080'
 "
 " Default Keymap:
 "   <CR>      Open link under the cursor.
+"   <S-CR>    Open link under the cursor (with new tab).
 "   <TAB>     Move cursor next link.
 "   <s-TAB>   Move cursor previous link.
 "   <Space>   Scroll down.
@@ -34,16 +35,21 @@
 "   <A-RIGHT> Forward page.
 "
 " History:
-"    v0.0.1 first version
-"    v0.0.2 listchars=はグローバルなので設定しないように修正
-"           URLオープン中にw3mのコマンドではなく、URLを表示するように修正。
-"           以下のコマンドを追加
+"    v0.0.1 ・first version
+"    v0.0.2 ・listchars=はグローバルなので設定しないように修正
+"           ・URLオープン中にw3mのコマンドではなく、URLを表示するように修正。
+"           ・以下のコマンドを追加
 "             :W3mTab              を追加(新しいタブで開く)
 "             :W3mCopyUrl          クリップボードにURLをコピー
-"    v0.0.3 ハイライトを"syntax match"ではなく"call matchadd"に変更し、
-"           範囲指定によりマッチさせるように変更
-"           cursorlineはハイライト行で処理が遅くなるので削除
-"           <b>と<u>の対応を入れた。
+"    v0.0.3 ・ハイライトを"syntax match"ではなく"call matchadd"に変更し、
+"           ・範囲指定によりマッチさせるように変更
+"           ・cursorlineはハイライト行で処理が遅くなるので削除
+"           ・<b>と<u>の対応を入れた。
+"    v0.0.4 ・<a HREF=...>のように属性名が大文字だとうまくジャンプできない
+"             不具合修正
+"           ・w3mInputを[]でみないでinputタグで見るように修正
+"           ・テキストエリアに入力時に[]からはみ出さないように修正。
+"           ・リンクの上で<S-CR>を押すと新しいタブで開くようにした。
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -235,7 +241,7 @@ function! w3m#NextLink()
   endif
 endfunction
 
-function! w3m#Click()
+function! w3m#Click(shift)
   let [cl,cc] = [ line('.'), col('.') ]
   let tstart = -1
   let tidx = 0
@@ -260,6 +266,7 @@ function! w3m#Click()
     if b:tag_list[tidx].type != s:TAG_START
       break
     endif
+    let b:click_with_shift = a:shift
     let ret = s:dispatchTagProc(b:tag_list[tidx].tagname, tidx)
     if ret == 1
       break
@@ -281,6 +288,7 @@ function! s:openCurrentHistory()
   call s:message('analize output')
   let b:display_lines = s:analizeOutputs(b:outputs_history[b:history_index])
   let b:last_url = b:url_history[b:history_index]
+  call clearmatches()
   % delete _
   call setline(1, b:display_lines)
   call s:message('done')
@@ -355,13 +363,13 @@ function! s:analizeTag(tag, attr)
   let tagname_e = stridx(a:tag, ' ') - 1
   if tagname_e < 0
     if a:tag[1:1] == '/'
-      return strpart(a:tag, 2, strlen(a:tag)-3)
+      return tolower(strpart(a:tag, 2, strlen(a:tag)-3))
     else
-      return strpart(a:tag, 1, strlen(a:tag)-2)
+      return tolower(strpart(a:tag, 1, strlen(a:tag)-2))
     endif
   endif
 
-  let tagname = strpart(a:tag, 1, tagname_e)
+  let tagname = tolower(strpart(a:tag, 1, tagname_e))
   let idx = 0
   while 1
     " find start of value (vs)
@@ -392,7 +400,7 @@ function! s:analizeTag(tag, attr)
     endif
     let ke -= 1
 
-    let a:attr[strpart(a:tag, ks, ke-ks+1)] = s:decordeEntRef(strpart(a:tag, vs, ve-vs+1))
+    let a:attr[tolower(strpart(a:tag, ks, ke-ks+1))] = s:decordeEntRef(strpart(a:tag, vs, ve-vs+1))
     let idx = ve + 2
   endwhile
 
@@ -417,14 +425,17 @@ function! s:prepare_buffer()
     let b:tag_list = []
     let b:form_list = []
     let b:debug_msg = []
+    let b:click_with_shift = 0
 
     call s:keymap()
+    call s:default_highligh()
   endif
 endfunction
 
 function! s:keymap()
   if !exists('g:w3m#disable_default_keymap') || g:w3m#disable_default_keymap == 0
-    nnoremap <buffer> <CR> :call w3m#Click()<CR>
+    nnoremap <buffer> <CR> :call w3m#Click(0)<CR>
+    nnoremap <buffer> <S-CR> :call w3m#Click(1)<CR>
     nnoremap <buffer> <TAB> :call w3m#NextLink()<CR>
     nnoremap <buffer> <s-TAB> :call w3m#PrevLink()<CR>
     nnoremap <buffer> <Space>   10<C-E>
@@ -435,65 +446,76 @@ function! s:keymap()
   endif
 endfunction
 
-function! s:applySyntax()
-" try 
-"   syn clear w3mLink
-" catch /.*/
-" endtry
-  call clearmatches()
+function! s:default_highligh()
   hi w3mBold gui=bold
   hi w3mUnderline gui=underline
+  if !hlexists('w3mInput')
+    highlight! link w3mInput String
+  endif
+  if !hlexists('w3mSubmit')
+    highlight! link w3mSubmit String
+  endif
+  if !hlexists('w3mLink')
+    highlight! link w3mSubmit String
+  endif
+endfunction
 
-  let input_image_s = -1
+function! s:applySyntax()
   let link_s = -1
   let bold_s = -1
   let underline_s = -1
+  let input_s = -1
+  let input_highlight = ""
   for tag in b:tag_list
-    if link_s == -1 && tag.tagname == 'a' && tag.type == s:TAG_START
+    if link_s == -1 && tag.tagname ==? 'a' && tag.type == s:TAG_START
       if tag.col > 0
         let link_s = tag.col -1
       else
         let link_s = 0
       endif
-    elseif link_s != -1 && tag.tagname == 'a' && tag.type == s:TAG_END
+    elseif link_s != -1 && tag.tagname ==? 'a' && tag.type == s:TAG_END
       let link_e = tag.col
       call matchadd('w3mLink', '\%>'.link_s.'c\%<'.link_e.'c\%'.tag.line.'l')
       let link_s = -1
 
-    elseif bold_s == -1 && tag.tagname == 'b' && tag.type == s:TAG_START
+    elseif bold_s == -1 && tag.tagname ==? 'b' && tag.type == s:TAG_START
       if tag.col > 0
         let bold_s = tag.col -1
       else
         let bold_s = 0
       endif
-    elseif bold_s != -1 && tag.tagname == 'b' && tag.type == s:TAG_END
+    elseif bold_s != -1 && tag.tagname ==? 'b' && tag.type == s:TAG_END
       let bold_e = tag.col
       call matchadd('w3mBold', '\%>'.bold_s.'c\%<'.bold_e.'c\%'.tag.line.'l')
 
-    elseif underline_s == -1 && tag.tagname == 'u' && tag.type == s:TAG_START
+    elseif underline_s == -1 && tag.tagname ==? 'u' && tag.type == s:TAG_START
       if tag.col > 0
         let underline_s = tag.col -1
       else
         let underline_s = 0
       endif
-    elseif underline_s != -1 && tag.tagname == 'u' && tag.type == s:TAG_END
+    elseif underline_s != -1 && tag.tagname ==? 'u' && tag.type == s:TAG_END
       let underline_e = tag.col
       call matchadd('w3mUnderline', '\%>'.underline_s.'c\%<'.underline_e.'c\%'.tag.line.'l')
 
-    elseif input_image_s == -1 && s:is_tag_input_image_submit(tag) && tag.type == s:TAG_START
-      if tag.col > 0
-        let input_image_s = tag.col -1
+    elseif input_s == -1 && tag.tagname ==? 'input_alt' && tag.type == s:TAG_START
+      if s:is_tag_input_image_submit(tag)
+        let input_highlight = 'w3mSubmit'
       else
-        let input_image_s = 0
+        let input_highlight = 'w3mInput'
       endif
-    elseif input_image_s != -1 && stridx(tag.tagname, 'input') == 0 && tag.type == s:TAG_END
-      let input_image_e = tag.col
-      call matchadd('w3mSubmit', '\%>'.input_image_s.'c\%<'.input_image_e.'c\%'.tag.line.'l')
-      let input_image_s = -1
+      if tag.col > 0
+        let input_s = tag.col -1
+      else
+        let input_s = 0
+      endif
+    elseif input_s != -1 && stridx(tag.tagname, 'input') == 0 && tag.type == s:TAG_END
+      let input_e = tag.col
+      call matchadd(input_highlight, '\%>'.input_s.'c\%<'.input_e.'c\%'.tag.line.'l')
+      let input_s = -1
     endif
   endfor
 
-  syn region w3mInput start='\[' end='\]'
 endfunction
 
 function! s:escapeSyntax(str)
@@ -501,18 +523,23 @@ function! s:escapeSyntax(str)
 endfunction
 
 function! s:dispatchTagProc(tagname, tidx)
-  if a:tagname == 'a'
-    return s:tag_a(a:tidx)
+  let ret = 0
+  if a:tagname ==? 'a'
+    let ret = s:tag_a(a:tidx)
   elseif stridx(a:tagname, 'input') == 0
-    return s:tag_input(a:tidx)
+    let ret = s:tag_input(a:tidx)
   endif
-  return 0
+  return ret
 endfunction
 
 function! s:tag_a(tidx)
   if has_key(b:tag_list[a:tidx].attr,'href')
     let url = s:resolveUrl(b:tag_list[a:tidx].attr.href)
-    call w3m#Open(url)
+    if b:click_with_shift == 1
+      call w3m#OpenAtNewTab(url)
+    else
+      call w3m#Open(url)
+    endif
   endif
   return 1
 endfunction
@@ -555,7 +582,6 @@ function! s:tag_input_submit(tidx)
      let idx -= 1
     endwhile
 
-    "call s:ddd(action . ':' . url)
     if url != ''
       if action ==? 'GET'
         let query = s:buildQueryString()
@@ -645,7 +671,6 @@ function! s:buildQueryString()
       let query .= item.attr.name . '=' . s:encodeUrl(value)
     endif
   endfor
-  "call s:ddd("query!! " . query)
   return query
 endfunction
 
@@ -685,13 +710,14 @@ function! s:applyEditedInputValues()
       if s >= 0
         let e = stridx(line, ']')
         if e >= 0
-          let s += strlen(value) + 1
-          while s < e
+          let i = s+strlen(value) + 1
+          while i < e
             let value .= ' '
-            let s += 1
+            let i += 1
           endwhile
         endif
       endif
+      let value = strpart(value, 0, e - s -1)
       let line = strpart(line, 0, item.col-1) . value . strpart(line, item.col+strlen(value)-1)
       setlocal modifiable
       call setline(item.line, line)

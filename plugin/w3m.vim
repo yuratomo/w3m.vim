@@ -1,7 +1,7 @@
 "
 " File: w3m.vim
-" Last Modified: 2012.03.09
-" Version: 0.2.0
+" Last Modified: 2012.03.13
+" Version: 0.4.0
 " Author: yuratomo
 "
 " Usage:
@@ -21,12 +21,18 @@
 "   Change Url:
 "     input :W3mAddressBar
 "
+"   Show External Browser:
+"     input :W3mShowExtenalBrowser
+"
 " Setting:
 "
 "   Hilight:
-"     highlight! link w3mLink   StatusLineNC
-"     highlight! link w3mSubmit Title
-"     highlight! link w3mInput  String
+"     highlight! link w3mLink      Function
+"     highlight! link w3mSubmit    Special
+"     highlight! link w3mInput     String
+"     highlight! link w3mBold      Comment
+"     highlight! link w3mUnderline Underlined
+"     highlight! link w3mHitAHint  Question
 "
 "   Use Proxy:
 "     let &HTTP_PROXY='http://xxx.xxx/:8080'
@@ -48,6 +54,7 @@
 "   <A-LEFT>  Back page.
 "   <A-RIGHT> Forward page.
 "   =         Show href under the cursor.
+"   f         Hit-A-Hint.
 "
 " History:
 "    v0.0.1 ・first version
@@ -84,9 +91,12 @@
 "           ・:W3mShowSource (ソースの表示)追加
 "           ・ホームページ指定機能追加 (g:w3m#homepage = ...)
 "           ・カーソル下のリンクのURLを表示する機能追加(=)
+"    v0.4.0 ・HitAHint機能追加
+"           ・ハイライトグループにw3mBoldとw3mUnderlineを追加
+"           ・リンクをマウスでクリックできるようにした。
+"           ・matchがhlsearchより優先されるのでその対策
 "
 " TODO:
-"           ・matchがhlsearchより優先されるのでその対策
 "           ・履歴一覧
 "
 
@@ -284,10 +294,15 @@ function! w3m#EditAddress()
   endif
 endfunction
 
-"xxx
-"function! w3m#ApplyHighlitSearch()
-"  call matchadd("Search", histget("search", -1))
-"endfunction
+function! w3m#MatchSearch()
+  if exists('b:last_search_id') && b:last_search_id != -1
+    try 
+      call matchdelete(b:last_search_id)
+    catch
+    endtry
+  endif
+  let b:last_search_id = matchadd("Search", histget("search", -1))
+endfunction
 
 function! w3m#OpenAtNewTab(...)
   tabe
@@ -445,7 +460,7 @@ function! s:openCurrentHistory()
   call w3m#ShowTitle()
 
   call s:applySyntax()
-  setlocal bt=nofile noswf nomodifiable nowrap hidden 
+  setlocal bt=nofile noswf nomodifiable nowrap hidden nolist
 endfunction
 
 function! s:analizeOutputs(output_lines)
@@ -590,6 +605,7 @@ function! s:prepare_buffer()
     let b:form_list = []
     let b:debug_msg = []
     let b:click_with_shift = 0
+    let b:last_search_id = -1
 
     call s:keymap()
     call s:default_highligh()
@@ -613,20 +629,32 @@ function! s:keymap()
     nnoremap <buffer> <A-LEFT> :call w3m#Back()<CR>
     nnoremap <buffer> <A-RIGHT> :call w3m#Forward()<CR>
     nnoremap <buffer> = :call w3m#CheckUnderCursor()<CR>
+    cnoremap <buffer> <CR> <CR>:call w3m#MatchSearch()<CR>
+    nnoremap <buffer> * *:call w3m#MatchSearch()<CR>
+    nnoremap <buffer> # #:call w3m#MatchSearch()<CR>
+    nnoremap <buffer> f :call w3m#HitAHint()<CR>
+    nnoremap <buffer> <LeftMouse> <LeftMouse>:call w3m#Click(0)<CR>
   endif
 endfunction
 
 function! s:default_highligh()
-  hi w3mBold gui=bold
-  hi w3mUnderline gui=underline
+  if !hlexists('w3mBold')
+    hi w3mBold gui=bold
+  endif
+  if !hlexists('w3mUnderline')
+    hi w3mUnderline gui=underline
+  endif
   if !hlexists('w3mInput')
     highlight! link w3mInput String
   endif
   if !hlexists('w3mSubmit')
-    highlight! link w3mSubmit String
+    highlight! link w3mSubmit Special
   endif
   if !hlexists('w3mLink')
-    highlight! link w3mLink String
+    highlight! link w3mLink Function
+  endif
+  if !hlexists('w3mHitAHint')
+    highlight! link w3mHitAHint Question
   endif
 endfunction
 
@@ -1011,6 +1039,52 @@ function! s:applyEditedInputValues()
       call setline(item.line, line)
       setlocal nomodifiable
 
+    endif
+  endfor
+endfunction
+
+function! w3m#HitAHint()
+  if !exists('b:tag_list')
+    return
+  endif
+  let index = 0
+  for item in b:tag_list
+    if item.tagname ==? 'a' && item.type == s:TAG_START && item.line >= line('w0')
+      let link_s = item.col-1
+      let link_e = item.col+strlen(index)
+      let line = getline(item.line)
+      let line = strpart(line, 0, link_s) . '@' . index . strpart(line, link_e)
+      setlocal modifiable
+      call setline(item.line, line)
+      setlocal nomodifiable
+      let link_e = link_e + 1
+      call matchadd('w3mHitAHint', '\%>'.link_s.'c\%<'.link_e.'c\%'.item.line.'l')
+      let index = index + 1
+    endif
+    if item.line >= line('w$')
+      break
+    endif
+  endfor
+  cnoremap <buffer> <CR> <CR>:call w3m#Click(0)<CR>:call w3m#HitAHintEnd()<CR>
+  cnoremap <buffer> <ESC> <ESC>:call w3m#HitAHintEnd()<CR>
+  nnoremap <buffer> <ESC> <ESC>:call w3m#HitAHintEnd()<CR>
+  call feedkeys('/@')
+endfunction
+
+function! w3m#HitAHintEnd()
+  cnoremap <buffer> <CR> <CR>:call w3m#MatchSearch()<CR>
+  cnoremap <buffer> <ESC> <ESC>
+  nnoremap <buffer> <ESC> <ESC>
+  call s:applySyntax()
+  for item in b:tag_list
+    if item.tagname ==? 'a' && item.type == s:TAG_START && item.line >= line('w0')
+      let line = b:display_lines[item.line-1]
+      setlocal modifiable
+      call setline(item.line, line)
+      setlocal nomodifiable
+    endif
+    if item.line >= line('w$')
+      break
     endif
   endfor
 endfunction

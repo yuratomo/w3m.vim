@@ -95,6 +95,8 @@
 "           ・ハイライトグループにw3mBoldとw3mUnderlineを追加
 "           ・リンクをマウスでクリックできるようにした。
 "           ・matchがhlsearchより優先されるのでその対策
+"    v0.4.1 ・検索していない状態でinput text等をクリックするとハイライト
+"             が誤動作するバグ修正
 "
 " TODO:
 "           ・履歴一覧
@@ -301,7 +303,11 @@ function! w3m#MatchSearch()
     catch
     endtry
   endif
-  let b:last_search_id = matchadd("Search", histget("search", -1))
+  let keyword = histget("search", -1)
+  if keyword == '^.*$\n'
+    return
+  endif
+  let b:last_search_id = matchadd("Search", keyword)
 endfunction
 
 function! w3m#OpenAtNewTab(...)

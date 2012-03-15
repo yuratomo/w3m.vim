@@ -97,9 +97,8 @@
 "           ・matchがhlsearchより優先されるのでその対策
 "    v0.4.1 ・検索していない状態でinput text等をクリックするとハイライト
 "             が誤動作するバグ修正
+"    v0.4.2 ・戻る/進む/新しいURLを開く時に前のページのカーソル位置を覚えるように修正
 "
-" TODO:
-"           ・履歴一覧
 "
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -119,7 +118,7 @@ if !exists('g:w3m#wget_command')
   let g:w3m#wget_command = 'wget'
 endif
 if !exists('g:w3m#download_ext')
-  let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z' ]
+  let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z', 'exe' ]
 endif
 if !exists('g:w3m#search_engine')
   let g:w3m#search_engine = 
@@ -140,7 +139,6 @@ if !executable(g:w3m#command)
 endif
 
 let s:w3m_title = 'w3m'
-let s:w3m_version = ''
 let s:message_adjust = 20
 let s:tmp_option = ''
 let [s:TAG_START,s:TAG_END,s:TAG_BOTH,s:TAG_UNKNOWN] = range(4)
@@ -199,6 +197,9 @@ function! w3m#CheckUnderCursor()
 endfunction
 
 function! w3m#Debug()
+  if !exists('b:last_url')
+    return
+  endif
   setlocal modifiable
 
   let didx = len(b:display_lines)
@@ -326,26 +327,26 @@ function! w3m#Open(...)
   endif
 
   call s:prepare_buffer()
+  if b:history_index >= 0 && b:history_index < len(b:history)
+    let b:history[b:history_index].curpos = [ line('.'), col('.') ]
+  endif
 
   if s:isHttpURL(a:000[0])
     let url = s:normalizeUrl(a:000[0])
   else
     let url = g:w3m#search_engine . join(a:000, ' ')
   endif
-  if len(b:url_history) - 1 > b:history_index
-    call remove(b:url_history, b:history_index+1, -1)
-    call remove(b:outputs_history, b:history_index+1, -1)
+  if len(b:history) - 1 > b:history_index
+    call remove(b:history, b:history_index+1, -1)
   endif
   let cols = winwidth(0) - &numberwidth
   let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ')
-  call add(b:url_history, url)
   call s:message( strpart('open ' . url, 0, cols - s:message_adjust) )
-  call add(b:outputs_history, split(system(cmdline), '\n'))
-  let b:history_index = len(b:url_history) - 1
+  call add(b:history, {'url':url, 'outputs':split(system(cmdline), '\n')} )
+  let b:history_index = len(b:history) - 1
   if b:history_index >= g:w3m#max_history_num
-    call remove(b:url_history, 0, 0)
-    call remove(b:outputs_history, 0, 0)
-    let b:history_index = len(b:url_history) - 1
+    call remove(b:history, 0, 0)
+    let b:history_index = len(b:history) - 1
   endif
 
   call s:openCurrentHistory()
@@ -355,14 +356,16 @@ function! w3m#Back()
   if b:history_index <= 0
     return
   endif
+  let b:history[b:history_index].curpos = [ line('.'), col('.') ]
   let b:history_index -= 1
   call s:openCurrentHistory()
 endfunction
 
 function! w3m#Forward()
-  if b:history_index >= len(b:url_history) - 1
+  if b:history_index >= len(b:history) - 1
     return
   endif
+  let b:history[b:history_index].curpos = [ line('.'), col('.') ]
   let b:history_index += 1
   call s:openCurrentHistory()
 endfunction
@@ -457,15 +460,17 @@ endfunction
 function! s:openCurrentHistory()
   setlocal modifiable
   call s:message('analize output')
-  let b:display_lines = s:analizeOutputs(b:outputs_history[b:history_index])
-  let b:last_url = b:url_history[b:history_index]
+  let b:display_lines = s:analizeOutputs(b:history[b:history_index].outputs)
+  let b:last_url = b:history[b:history_index].url
   call clearmatches()
   % delete _
   call setline(1, b:display_lines)
-  "call s:message('done')
   call w3m#ShowTitle()
-
   call s:applySyntax()
+  if has_key(b:history[b:history_index], 'curpos') 
+    let [cl,cc] = b:history[b:history_index].curpos
+    call cursor(cl, cc)
+  endif
   setlocal bt=nofile noswf nomodifiable nowrap hidden nolist
 endfunction
 
@@ -604,8 +609,7 @@ function! s:prepare_buffer()
     let b:w3m_bufname = s:w3m_title.'-'.id
     let b:last_url = ''
     let b:history_index = 0
-    let b:url_history = []
-    let b:outputs_history = []
+    let b:history = []
     let b:display_lines = []
     let b:tag_list = []
     let b:form_list = []

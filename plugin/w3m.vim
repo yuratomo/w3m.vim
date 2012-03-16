@@ -1,6 +1,6 @@
 " File: w3m.vim
 " Last Modified: 2012.03.17
-" Version: 0.4.3
+" Version: 0.4.4
 " Author: yuratomo
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -14,11 +14,7 @@ if !exists('g:w3m#command')
   let g:w3m#command = 'w3m'
 endif
 if !exists('g:w3m#option')
-  if has('win32')
-    let g:w3m#option = '-s -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
-  else
-    let g:w3m#option = '-e -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
-  endif
+  let g:w3m#option = '-o display_charset=UTF-8 -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
 endif
 if !exists('g:w3m#wget_command')
   let g:w3m#wget_command = 'wget'
@@ -27,13 +23,8 @@ if !exists('g:w3m#download_ext')
   let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z', 'exe' ]
 endif
 if !exists('g:w3m#search_engine')
-  if has('win32')
-    let g:w3m#search_engine = 
-      \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=SHIFT_JIS&aq=&oq=&p='
-  else
-    let g:w3m#search_engine = 
-      \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=EUC-JP&aq=&oq=&p='
-  endif
+  let g:w3m#search_engine = 
+    \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=UTF-8&aq=&oq=&p='
 endif
 if !exists('g:w3m#max_history_num')
   let g:w3m#max_history_num = 10
@@ -186,7 +177,7 @@ endfunction
 
 function! w3m#ShowExternalBrowser()
   if exists('g:w3m#external_browser') && exists('b:last_url')
-    call system(g:w3m#external_browser . ' "' . b:last_url . '"' . s:abandon_error)
+    call system(g:w3m#external_browser . ' "' . b:last_url . '"')
   endif
 endfunction
 
@@ -258,7 +249,7 @@ function! w3m#Open(...)
     call remove(b:history, b:history_index+1, -1)
   endif
   let cols = winwidth(0) - &numberwidth
-  let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ')
+  let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ') . s:abandon_error
   call s:message( strpart('open ' . url, 0, cols - s:message_adjust) )
   call add(b:history, {'url':url, 'outputs':split(system(cmdline), '\n')} )
   let b:history_index = len(b:history) - 1
@@ -388,7 +379,7 @@ function! s:openCurrentHistory()
     let [cl,cc] = b:history[b:history_index].curpos
     call cursor(cl, cc)
   endif
-  setlocal bt=nofile noswf nomodifiable nowrap hidden nolist
+  setlocal bt=nofile noswf nomodifiable nowrap hidden nolist encoding=UTF-8
 endfunction
 
 function! s:analizeOutputs(output_lines)

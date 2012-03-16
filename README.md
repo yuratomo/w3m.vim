@@ -46,6 +46,20 @@ Settings
 ###Set Home Page:###
     let g:w3m#homepage = "http://www.google.co.jp/"
 
+Default Keymaps
+---------------
+* <CR>      Open link under the cursor.
+* <S-CR>    Open link under the cursor (with new tab).
+* <TAB>     Move cursor next link.
+* <s-TAB>   Move cursor previous link.
+* <Space>   Scroll down.
+* <S-Space> Scroll up.
+* <BS>      Back page.
+* <A-LEFT>  Back page.
+* <A-RIGHT> Forward page.
+* =         Show href under the cursor.
+* f         Hit-A-Hint.
+
 ScreenShots
 -----------
 

@@ -1,105 +1,7 @@
-"
 " File: w3m.vim
-" Last Modified: 2012.03.13
-" Version: 0.4.0
+" Last Modified: 2012.03.17
+" Version: 0.4.3
 " Author: yuratomo
-"
-" Usage:
-"
-"   Open URL:
-"     input :W3m [url or keyword]
-"
-"   Open URL At New Tab:
-"     input :W3mTab [url or keyword]
-"
-"   Copy URL To Clipboar:
-"     input :W3mCopyUrl
-"
-"   Reload Current Page:
-"     input :W3mReload
-"
-"   Change Url:
-"     input :W3mAddressBar
-"
-"   Show External Browser:
-"     input :W3mShowExtenalBrowser
-"
-" Setting:
-"
-"   Hilight:
-"     highlight! link w3mLink      Function
-"     highlight! link w3mSubmit    Special
-"     highlight! link w3mInput     String
-"     highlight! link w3mBold      Comment
-"     highlight! link w3mUnderline Underlined
-"     highlight! link w3mHitAHint  Question
-"
-"   Use Proxy:
-"     let &HTTP_PROXY='http://xxx.xxx/:8080'
-"
-"   Set External Browser:
-"     let g:w3m#external_browser = 'chrome'
-"
-"   Set Home Page:
-"     let g:w3m#homepage = "http://www.google.co.jp/"
-"
-" Default Keymap:
-"   <CR>      Open link under the cursor.
-"   <S-CR>    Open link under the cursor (with new tab).
-"   <TAB>     Move cursor next link.
-"   <s-TAB>   Move cursor previous link.
-"   <Space>   Scroll down.
-"   <S-Space> Scroll up.
-"   <BS>      Back page.
-"   <A-LEFT>  Back page.
-"   <A-RIGHT> Forward page.
-"   =         Show href under the cursor.
-"   f         Hit-A-Hint.
-"
-" History:
-"    v0.0.1 ・first version
-"    v0.0.2 ・listchars=はグローバルなので設定しないように修正
-"           ・URLオープン中にw3mのコマンドではなく、URLを表示するように修正。
-"           ・以下のコマンドを追加
-"             :W3mTab              を追加(新しいタブで開く)
-"             :W3mCopyUrl          クリップボードにURLをコピー
-"    v0.0.3 ・ハイライトを"syntax match"ではなく"call matchadd"に変更し、
-"           ・範囲指定によりマッチさせるように変更
-"           ・cursorlineはハイライト行で処理が遅くなるので削除
-"           ・<b>と<u>の対応を入れた。
-"    v0.0.4 ・<a HREF=...>のように属性名が大文字だとうまくジャンプできない
-"             不具合修正
-"           ・w3mInputを[]で見ないでinputタグで見るように修正
-"           ・テキストエリアに入力時に[]からはみ出さないように修正。
-"           ・リンクの上で<S-CR>を押すと新しいタブで開くようにした。
-"    v0.0.5 ・googleのホームから検索できない件修正(input submitをくえりーからはずす)
-"           ・テキストエリアのアンダーラインが変だったので修正
-"           ・wgetによるzipファイルなどのダウンロード対応
-"    v0.1.0 ・a href= にルートからの相対パスが指定されているとリンクがたどれない件修正
-"           ・w3mLinkのハイライト定義がないとエラーになる件修正
-"           ・w3mを開いたウィンドウにmatch指定が残る問題修正
-"           　また、他のウィンドウでw3mのバッファを開くとmatchが消える問題修正
-"    v0.2.0 ・input type=radio/checkbox 対応
-"           ・2chみたいにa href=http://bar/見たいな属性がある場合に対応
-"           ・リロード機能(:W3mReload)追加
-"           ・属性の解析がおかしかったので修正
-"    v0.2.1 ・属性解析ロジック不具合修正
-"           ・<a href='xxx'みたいにシングルクォートが使われている場合に対応
-"    v0.3.0 ・:W3mAddressBarを追加
-"           ・:W3mShowTitle (タイトル表示)追加
-"           ・:W3mShowExtenalBrowser (外部ブラウザ表示)追加
-"           ・:W3mShowSource (ソースの表示)追加
-"           ・ホームページ指定機能追加 (g:w3m#homepage = ...)
-"           ・カーソル下のリンクのURLを表示する機能追加(=)
-"    v0.4.0 ・HitAHint機能追加
-"           ・ハイライトグループにw3mBoldとw3mUnderlineを追加
-"           ・リンクをマウスでクリックできるようにした。
-"           ・matchがhlsearchより優先されるのでその対策
-"    v0.4.1 ・検索していない状態でinput text等をクリックするとハイライト
-"             が誤動作するバグ修正
-"    v0.4.2 ・戻る/進む/新しいURLを開く時に前のページのカーソル位置を覚えるように修正
-"
-"
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
   finish
@@ -112,7 +14,11 @@ if !exists('g:w3m#command')
   let g:w3m#command = 'w3m'
 endif
 if !exists('g:w3m#option')
-  let g:w3m#option = '-s -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
+  if has('win32')
+    let g:w3m#option = '-s -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
+  else
+    let g:w3m#option = '-e -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
+  endif
 endif
 if !exists('g:w3m#wget_command')
   let g:w3m#wget_command = 'wget'
@@ -121,8 +27,13 @@ if !exists('g:w3m#download_ext')
   let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z', 'exe' ]
 endif
 if !exists('g:w3m#search_engine')
-  let g:w3m#search_engine = 
-    \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=SHIFT_JIS&aq=&oq=&p='
+  if has('win32')
+    let g:w3m#search_engine = 
+      \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=SHIFT_JIS&aq=&oq=&p='
+  else
+    let g:w3m#search_engine = 
+      \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=EUC-JP&aq=&oq=&p='
+  endif
 endif
 if !exists('g:w3m#max_history_num')
   let g:w3m#max_history_num = 10
@@ -142,6 +53,12 @@ let s:w3m_title = 'w3m'
 let s:message_adjust = 20
 let s:tmp_option = ''
 let [s:TAG_START,s:TAG_END,s:TAG_BOTH,s:TAG_UNKNOWN] = range(4)
+
+if has('win32')
+  let s:abandon_error = ' 2> NUL'
+else
+  let s:abandon_error = ' 2> /dev/null'
+endif
 
 command! -nargs=* W3m :call w3m#Open(<f-args>)
 command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
@@ -227,8 +144,8 @@ function! w3m#Debug()
   endfor
   call setline(didx, '--------- dbgmsg --------')
   let didx += 1
-  call setline(didx, 'query=' . s:buildQueryString())
-  let didx += 1
+  "call setline(didx, 'query=' . s:buildQueryString())
+  "let didx += 1
   call setline(didx, b:debug_msg)
   let didx += 1
 
@@ -254,7 +171,8 @@ function! w3m#ShowTitle()
         break
       endif
     endfor
-    call s:message(title)
+    let cols = winwidth(0) - &numberwidth
+    call s:message( strpart(title, 0, cols - s:message_adjust) )
   endif
 endfunction
 
@@ -268,7 +186,7 @@ endfunction
 
 function! w3m#ShowExternalBrowser()
   if exists('g:w3m#external_browser') && exists('b:last_url')
-    call system(g:w3m#external_browser . ' "' . b:last_url . '"')
+    call system(g:w3m#external_browser . ' "' . b:last_url . '"' . s:abandon_error)
   endif
 endfunction
 
@@ -446,7 +364,6 @@ function! w3m#Click(shift)
     let tidx -= 1
   endwhile
 
-  "call s:message('done')
   call w3m#ShowTitle()
 endfunction
 
@@ -783,12 +700,16 @@ endfunction
 function! s:tag_input_submit(tidx)
     let idx = a:tidx - 1
     let action = 'GET'
+    let fid = 0
     while idx >= 0
       if b:tag_list[idx].type == s:TAG_START && stridx(b:tag_list[idx].tagname, 'form') == 0
        if has_key(b:tag_list[idx].attr,'action') 
          let url = s:resolveUrl(b:tag_list[idx].attr.action)
          if has_key(b:tag_list[idx].attr,'method') 
            let action = b:tag_list[idx].attr.method
+         endif
+         if has_key(b:tag_list[idx].attr,'fid') 
+           let fid = b:tag_list[idx].attr.fid
          endif
          break
        endif
@@ -798,10 +719,10 @@ function! s:tag_input_submit(tidx)
 
     if url != ''
       if action ==? 'GET'
-        let query = s:buildQueryString()
+        let query = s:buildQueryString(fid, a:tidx)
         call w3m#Open(url . query)
       elseif action ==? 'POST'
-        let file = s:generatePostFile()
+        let file = s:generatePostFile(fid, a:tidx)
         call s:post(url, file)
         call delete(file)
       else
@@ -926,13 +847,16 @@ function! s:resolveUrl(url)
   endif
 endfunction
 
-function! s:buildQueryString()
+function! s:buildQueryString(fid, tidx)
   let query = ''
   let first = 1
   for item in b:form_list
     if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
+      if !has_key(item.attr,'fid') || item.attr.fid != a:fid
+        continue
+      endif
       if has_key(item.attr,'type')
-        if item.attr.type == 'submit'
+        if item.attr.type == 'submit' && item.attr.name != b:tag_list[a:tidx].attr.name
           continue
         elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
           if item.edited == 1
@@ -961,17 +885,21 @@ function! s:buildQueryString()
       let query .= item.attr.name . '=' . s:encodeUrl(value)
     endif
   endfor
+  echo query
   return query
 endfunction
 
-function! s:generatePostFile()
+function! s:generatePostFile(fid, tidx)
   let tmp_file = tempname()
   let items = []
 
   for item in b:form_list
     if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
+      if !has_key(item.attr,'fid') || item.attr.fid != a:fid
+        continue
+      endif
       if has_key(item.attr,'type')
-        if item.attr.type == 'submit'
+        if item.attr.type == 'submit' && item.attr.name != b:tag_list[a:tidx].attr.name
           continue
         elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
           if item.edited == 1

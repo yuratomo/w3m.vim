@@ -91,6 +91,9 @@ ScreenShots
 HISTORY
 -------
 
+### v0.5.0 by yuratomo ###
+* neglect needless tag. (speed up analysis time)
+
 ### v0.4.5 by yuratomo ###
 * add :W3mClose
 * add :W3mSyntaxOn / :W3mSyntaxOff

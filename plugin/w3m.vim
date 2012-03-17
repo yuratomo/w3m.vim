@@ -1,7 +1,7 @@
 " File: w3m.vim
-" Last Modified: 2012.03.17
-" Version: 0.4.5
-" Author: yuratomo (twitter-id @yusetomo)
+" Last Modified: 2012.03.18
+" Version: 0.5.0
+" Author: yuratomo (twitter @yusetomo)
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
   finish
@@ -213,9 +213,9 @@ function! w3m#EditAddress()
 endfunction
 
 function! w3m#MatchSearch()
-  if exists('b:last_search_id') && b:last_search_id != -1
+  if exists('b:last_match_id') && b:last_match_id != -1
     try 
-      call matchdelete(b:last_search_id)
+      call matchdelete(b:last_match_id)
     catch
     endtry
   endif
@@ -223,7 +223,7 @@ function! w3m#MatchSearch()
   if keyword == '^.*$\n'
     return
   endif
-  let b:last_search_id = matchadd("Search", keyword)
+  let b:last_match_id = matchadd("Search", keyword)
 endfunction
 
 function! w3m#ChangeSyntaxOnOff(mode)
@@ -266,7 +266,7 @@ function! w3m#Open(...)
   let cols = winwidth(0) - &numberwidth
   let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ') . s:abandon_error
   call s:message( strpart('open ' . url, 0, cols - s:message_adjust) )
-  call add(b:history, {'url':url, 'outputs':split(system(cmdline), '\n')} )
+  call add(b:history, {'url':url, 'outputs':split(s:neglectNeedlessTags(system(cmdline)), '\n')} )
   let b:history_index = len(b:history) - 1
   if b:history_index >= g:w3m#max_history_num
     call remove(b:history, 0, 0)
@@ -541,7 +541,7 @@ function! s:prepare_buffer()
     let b:form_list = []
     let b:debug_msg = []
     let b:click_with_shift = 0
-    let b:last_search_id = -1
+    let b:last_match_id = -1
     let b:enable_syntax = 1
 
     call s:keymap()
@@ -1091,6 +1091,10 @@ function! s:normalizeUrl(url)
     let url .= '/'
   endif
   return url
+endfunction
+
+function! s:neglectNeedlessTags(output)
+  return substitute(a:output,'<[/]\{0,1\}\(_symbol\|_id\|intenal\|pre_int\|img_alt\|nobr\).\{-\}>','','g')
 endfunction
 
 function! s:decordeEntRef(str)

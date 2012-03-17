@@ -14,6 +14,11 @@ Usage
 ###Open URL At New Tab:###
     input :W3mTab [url or keyword]
 
+###Close:###
+    input :W3mClose
+    or
+    input :bd
+
 ###Copy URL To Clipboard:###
     input :W3mCopyUrl
 
@@ -25,6 +30,12 @@ Usage
 
 ###Show External Browser:###
     input :W3mShowExtenalBrowser
+
+###Syntax Off:###
+    input :W3mSyntaxOff
+
+###Syntax On:###
+    input :W3mSyntaxOn
 
 Settings
 --------
@@ -46,17 +57,24 @@ Settings
 ###Set Home Page:###
     let g:w3m#homepage = "http://www.google.co.jp/"
 
+###Specify Key Of Hit-A-Hint:###
+    let g:w3m#hit_a_hint_key = 'f'
+
+###Specify Default Search Engine:###
+    let g:w3m#search_engine = 
+        \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
+
 Default Keymaps
 ---------------
-* <CR>      Open link under the cursor.
-* <S-CR>    Open link under the cursor (with new tab).
-* <TAB>     Move cursor next link.
-* <s-TAB>   Move cursor previous link.
-* <Space>   Scroll down.
-* <S-Space> Scroll up.
-* <BS>      Back page.
-* <A-LEFT>  Back page.
-* <A-RIGHT> Forward page.
+* &lt;CR&gt;      Open link under the cursor.
+* &lt;S-CR&gt;    Open link under the cursor (with new tab).
+* &lt;TAB&gt;     Move cursor next link.
+* &lt;s-TAB&gt;   Move cursor previous link.
+* &lt;Space&gt;   Scroll down.
+* &lt;S-Space&gt; Scroll up.
+* &lt;BS&gt;      Back page.
+* &lt;A-LEFT&gt;  Back page.
+* &lt;A-RIGHT&gt; Forward page.
 * =         Show href under the cursor.
 * f         Hit-A-Hint.
 
@@ -68,4 +86,14 @@ ScreenShots
 
 ###Hit-A-Hint###
 ![sample1](http://yuratomo.up.seesaa.net/image/w3mvim_v0.4.0.002.png "sample1")
+
+
+HISTORY
+-------
+
+### v0.4.5 by yuratomo ###
+* add :W3mClose
+* add :W3mSyntaxOn / :W3mSyntaxOff
+* add g:w3m#hit_a_hint_key
+* Solution of the character code by &encoding
 

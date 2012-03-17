@@ -1,0 +1,9 @@
+HISTORY
+=======
+
+-------
+*add :W3mClose
+*add :W3mSyntaxOn / :W3mSyntaxOff
+*add g:w3m#hit_a_hint_key
+*Solution of the character code by &encoding
+

@@ -1,7 +1,7 @@
 " File: w3m.vim
 " Last Modified: 2012.03.17
-" Version: 0.4.4
-" Author: yuratomo
+" Version: 0.4.5
+" Author: yuratomo (twitter-id @yusetomo)
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
   finish
@@ -14,7 +14,7 @@ if !exists('g:w3m#command')
   let g:w3m#command = 'w3m'
 endif
 if !exists('g:w3m#option')
-  let g:w3m#option = '-o display_charset=UTF-8 -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
+  let g:w3m#option = '-o display_charset=' . &encoding . ' -halfdump -o frame=true -o ext_halfdump=1 -o strict_iso2022=0 -o ucs_conv=1'
 endif
 if !exists('g:w3m#wget_command')
   let g:w3m#wget_command = 'wget'
@@ -24,7 +24,7 @@ if !exists('g:w3m#download_ext')
 endif
 if !exists('g:w3m#search_engine')
   let g:w3m#search_engine = 
-    \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=UTF-8&aq=&oq=&p='
+    \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
 endif
 if !exists('g:w3m#max_history_num')
   let g:w3m#max_history_num = 10
@@ -34,6 +34,9 @@ if !exists('g:w3m#external_browser')
 endif
 if !exists('g:w3m#debug')
   let g:w3m#debug = 0
+endif
+if !exists('g:w3m#hit_a_hint_key')
+  let g:w3m#hit_a_hint_key = 'f'
 endif
 if !executable(g:w3m#command)
   echoerr "w3m is not exist!!"
@@ -59,6 +62,9 @@ command! -nargs=* W3mAddressBar :call w3m#EditAddress()
 command! -nargs=* W3mShowTitle :call w3m#ShowTitle()
 command! -nargs=* W3mShowExtenalBrowser :call w3m#ShowExternalBrowser()
 command! -nargs=* W3mShowSource :call w3m#ShowSourceAndHeader()
+command! -nargs=* W3mClose :bd
+command! -nargs=* W3mSyntaxOff :call w3m#ChangeSyntaxOnOff(0)
+command! -nargs=* W3mSyntaxOn :call w3m#ChangeSyntaxOnOff(1)
 
 function! w3m#BufWinEnter()
   call s:applySyntax()
@@ -220,6 +226,15 @@ function! w3m#MatchSearch()
   let b:last_search_id = matchadd("Search", keyword)
 endfunction
 
+function! w3m#ChangeSyntaxOnOff(mode)
+  let b:enable_syntax = a:mode
+  if a:mode == 0
+    call clearmatches()
+  else
+    call s:applySyntax()
+  endif
+endfunction
+
 function! w3m#OpenAtNewTab(...)
   tabe
   call w3m#Open(join(a:000, ' '))
@@ -379,7 +394,7 @@ function! s:openCurrentHistory()
     let [cl,cc] = b:history[b:history_index].curpos
     call cursor(cl, cc)
   endif
-  setlocal bt=nofile noswf nomodifiable nowrap hidden nolist encoding=UTF-8
+  setlocal bt=nofile noswf nomodifiable nowrap hidden nolist
 endfunction
 
 function! s:analizeOutputs(output_lines)
@@ -498,7 +513,10 @@ function! s:analizeTag(tag, attr)
     let ks = idx
     let ke = eq - 1
 
-    let a:attr[tolower(strpart(a:tag, ks, ke-ks+1))] = s:decordeEntRef(strpart(a:tag, vs, ve-vs+1))
+    let keyname = strpart(a:tag, ks, ke-ks+1)
+    if strlen(keyname) > 0
+      let a:attr[tolower(keyname)] = s:decordeEntRef(strpart(a:tag, vs, ve-vs+1))
+    endif
     let idx = na + 1
   endwhile
 
@@ -524,6 +542,7 @@ function! s:prepare_buffer()
     let b:debug_msg = []
     let b:click_with_shift = 0
     let b:last_search_id = -1
+    let b:enable_syntax = 1
 
     call s:keymap()
     call s:default_highligh()
@@ -550,8 +569,8 @@ function! s:keymap()
     cnoremap <buffer> <CR> <CR>:call w3m#MatchSearch()<CR>
     nnoremap <buffer> * *:call w3m#MatchSearch()<CR>
     nnoremap <buffer> # #:call w3m#MatchSearch()<CR>
-    nnoremap <buffer> f :call w3m#HitAHint()<CR>
     nnoremap <buffer> <LeftMouse> <LeftMouse>:call w3m#Click(0)<CR>
+    exe 'nnoremap <buffer> ' . g:w3m#hit_a_hint_key . ' :call w3m#HitAHint()<CR>'
   endif
 endfunction
 
@@ -577,6 +596,9 @@ function! s:default_highligh()
 endfunction
 
 function! s:applySyntax()
+  if b:enable_syntax == 0
+    return
+  endif
   let link_s = -1
   let bold_s = -1
   let underline_s = -1

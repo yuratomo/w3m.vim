@@ -64,6 +64,10 @@ Settings
     let g:w3m#search_engine = 
         \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
 
+###Vimproc:###
+You have been installed vimproc, if you do not want to use set as follows.
+    let g:w3m#disable_vimproc = 1
+
 Default Keymaps
 ---------------
 * &lt;CR&gt;      Open link under the cursor.
@@ -90,6 +94,11 @@ ScreenShots
 
 HISTORY
 -------
+
+### v0.5.1 by yuratomo ###
+* corresonds to vimproc
+* divided int plugin/w3m.vim and autoload/w3m.vim
+* Change the way the map.
 
 ### v0.5.0 by yuratomo ###
 * neglect needless tag. (speed up analysis time)

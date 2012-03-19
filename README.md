@@ -64,8 +64,12 @@ Settings
     let g:w3m#search_engine = 
         \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
 
-###Vimproc:###
-You have been installed vimproc, if you do not want to use set as follows.
+###Disable Defualt Keymap:###
+You set as follows if you do not want to use default keymap.
+    let g:w3m#disable_default_keymap = 1
+
+###Disable Vimproc:###
+You set as follows if you do not want to use vimproc.
     let g:w3m#disable_vimproc = 1
 
 Default Keymaps
@@ -94,6 +98,10 @@ ScreenShots
 
 HISTORY
 -------
+
+### v0.5.2 by yuratomo ###
+* bug fix 1 (nmap without <buffer>)
+* bug fix 2 (can not execute hit-a-hint)
 
 ### v0.5.1 by yuratomo ###
 * corresonds to vimproc

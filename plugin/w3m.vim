@@ -1,6 +1,6 @@
 " File: plugin/w3m.vim
-" Last Modified: 2012.03.18
-" Version: 0.5.1
+" Last Modified: 2012.03.19
+" Version: 0.5.2
 " Author: yuratomo (twitter @yusetomo)
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1

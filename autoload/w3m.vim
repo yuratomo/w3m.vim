@@ -1,6 +1,6 @@
 " File: autoload/w3m.vim
-" Last Modified: 2012.03.18
-" Version: 0.5.1
+" Last Modified: 2012.03.19
+" Version: 0.5.2
 " Author: yuratomo (twitter @yusetomo)
 
 let s:save_cpo = &cpo
@@ -163,7 +163,17 @@ function! w3m#EditAddress()
   endif
 endfunction
 
-function! w3m#MatchSearch()
+function! w3m#MatchSearchStart(key)
+  cnoremap <buffer> <CR> <CR>:call w3m#MatchSearchEnd()<CR>
+  cnoremap <buffer> <ESC> <ESC>:call w3m#MatchSearchEnd()<CR>
+  nnoremap <buffer> <ESC> <ESC>:call w3m#MatchSearchEnd()<CR>
+  call feedkeys(a:key, 'n')
+endfunction
+
+function! w3m#MatchSearchEnd()
+  cnoremap <buffer> <CR> <CR>
+  cnoremap <buffer> <ESC> <ESC>
+  nnoremap <buffer> <ESC> <ESC>
   if exists('b:last_match_id') && b:last_match_id != -1
     try 
       call matchdelete(b:last_match_id)
@@ -506,30 +516,31 @@ function! s:prepare_buffer()
 endfunction
 
 function! s:keymap()
-  nnoremap <buffer> <Plug>(w3m-click)        :<C-u>call w3m#Click(0)<CR>
-  nnoremap <buffer> <Plug>(w3m-shift-click)  :<C-u>call w3m#Click(1)<CR>
-  nnoremap <buffer> <Plug>(w3m-next-link)    :<C-u>call w3m#NextLink()<CR>
-  nnoremap <buffer> <Plug>(w3m-prev-link)    :<C-u>call w3m#PrevLink()<CR>
-  nnoremap <buffer> <Plug>(w3m-back)         :<C-u>call w3m#Back()<CR>
-  nnoremap <buffer> <Plug>(w3m-forward)      :<C-u>call w3m#Forward()<CR>
-  nnoremap <buffer> <Plug>(w3m-show-link)    :<C-u>call w3m#CheckUnderCursor()<CR>
-  cnoremap <buffer> <Plug>(w3m-match-search) :<C-u>call w3m#MatchSearch()<CR>
-  nnoremap <buffer> <Plug>(w3m-hit-a-hint)   :<C-u>call w3m#HitAHint()<CR>'
+  nnoremap <buffer><Plug>(w3m-click)        :<C-u>call w3m#Click(0)<CR>
+  nnoremap <buffer><Plug>(w3m-shift-click)  :<C-u>call w3m#Click(1)<CR>
+  nnoremap <buffer><Plug>(w3m-next-link)    :<C-u>call w3m#NextLink()<CR>
+  nnoremap <buffer><Plug>(w3m-prev-link)    :<C-u>call w3m#PrevLink()<CR>
+  nnoremap <buffer><Plug>(w3m-back)         :<C-u>call w3m#Back()<CR>
+  nnoremap <buffer><Plug>(w3m-forward)      :<C-u>call w3m#Forward()<CR>
+  nnoremap <buffer><Plug>(w3m-show-link)    :<C-u>call w3m#CheckUnderCursor()<CR>
+  nnoremap <buffer><Plug>(w3m-search-start) :<C-u>call w3m#MatchSearchStart('/')<CR>
+  nnoremap <buffer><Plug>(w3m-search-end)   :<C-u>call w3m#MatchSearchEnd()<CR>
+  nnoremap <buffer><Plug>(w3m-hit-a-hint)   :<C-u>call w3m#HitAHintStart()<CR>
 
   if !exists('g:w3m#disable_default_keymap') || g:w3m#disable_default_keymap == 0
-    nmap <LeftMouse> <LeftMouse><Plug>(w3m-click)
-    nmap <CR>        <Plug>(w3m-click)
-    nmap <S-CR>      <Plug>(w3m-shift-click)
-    nmap <TAB>       <Plug>(w3m-next-link)
-    nmap <S-TAB>     <Plug>(w3m-prev-link)
-    nmap <BS>        <Plug>(w3m-back)
-    nmap <A-LEFT>    <Plug>(w3m-back)
-    nmap <A-RIGHT>   <Plug>(w3m-forward)
-    nmap =           <Plug>(w3m-show-link)
-    nmap f           <Plug>(w3m-hit-a-hint)
-    cmap <CR>        <CR><Plug>(w3m-match-search)
-    nmap *           *<Plug>(w3m-match-search)
-    nmap #           #<Plug>(w3m-match-search)
+    nmap <buffer><LeftMouse> <LeftMouse><Plug>(w3m-click)
+    nmap <buffer><CR>        <Plug>(w3m-click)
+    nmap <buffer><S-CR>      <Plug>(w3m-shift-click)
+    nmap <buffer><TAB>       <Plug>(w3m-next-link)
+    nmap <buffer><S-TAB>     <Plug>(w3m-prev-link)
+    nmap <buffer><BS>        <Plug>(w3m-back)
+    nmap <buffer><A-LEFT>    <Plug>(w3m-back)
+    nmap <buffer><A-RIGHT>   <Plug>(w3m-forward)
+    nmap <buffer>=           <Plug>(w3m-show-link)
+    nmap <buffer>/           <Plug>(w3m-search-start)
+    nmap <buffer>*           *<Plug>(w3m-search-end)
+    nmap <buffer>#           #<Plug>(w3m-search-end)
+    exe 'nmap <buffer>' . g:w3m#hit_a_hint_key . ' <Plug>(w3m-hit-a-hint)'
   endif
 endfunction
 
@@ -696,8 +707,7 @@ function! s:tag_input_submit(tidx)
       elseif action ==? 'POST'
         let file = s:generatePostFile(fid, a:tidx)
         call s:post(url, file)
-        exe 'sp ' . file
-        "call delete(file)
+        call delete(file)
       else
         call s:message(toupper(action) . ' is not support')
       endif
@@ -954,7 +964,7 @@ function! s:applyEditedInputValues()
   endfor
 endfunction
 
-function! w3m#HitAHint()
+function! w3m#HitAHintStart()
   if !exists('b:tag_list')
     return
   endif
@@ -979,11 +989,11 @@ function! w3m#HitAHint()
   cnoremap <buffer> <CR> <CR>:call w3m#Click(0)<CR>:call w3m#HitAHintEnd()<CR>
   cnoremap <buffer> <ESC> <ESC>:call w3m#HitAHintEnd()<CR>
   nnoremap <buffer> <ESC> <ESC>:call w3m#HitAHintEnd()<CR>
-  call feedkeys('/@')
+  call feedkeys('/@', 'n')
 endfunction
 
 function! w3m#HitAHintEnd()
-  cnoremap <buffer> <CR> <CR>:call w3m#MatchSearch()<CR>
+  cnoremap <buffer> <CR> <CR>
   cnoremap <buffer> <ESC> <ESC>
   nnoremap <buffer> <ESC> <ESC>
   call s:applySyntax()

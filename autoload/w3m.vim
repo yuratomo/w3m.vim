@@ -1,6 +1,6 @@
 " File: autoload/w3m.vim
-" Last Modified: 2012.03.19
-" Version: 0.5.2
+" Last Modified: 2012.03.22
+" Version: 0.6.0
 " Author: yuratomo (twitter @yusetomo)
 
 let s:save_cpo = &cpo
@@ -43,7 +43,9 @@ function! w3m#CheckUnderCursor()
   let tidx = tstart
   while tidx >= 0
     if b:tag_list[tidx].line != cl
-      let tidx = -1
+      if tidx > 0
+        echo b:tag_list[tidx-1].attr
+      endif
       break
     endif
     if b:tag_list[tidx].type != s:TAG_START
@@ -51,14 +53,11 @@ function! w3m#CheckUnderCursor()
       continue
     endif
     if has_key(b:tag_list[tidx].attr, 'href')
+      echo b:tag_list[tidx].attr.href
       break
     endif
     let tidx -= 1
   endwhile
-
-  if tidx >= 0
-    echo b:tag_list[tidx].attr.href
-  endif
 endfunction
 
 function! w3m#Debug()
@@ -163,6 +162,30 @@ function! w3m#EditAddress()
   endif
 endfunction
 
+function! w3m#SetUserAgent(name)
+  let change = 0
+  for item in g:w3m#user_agent_list
+    if item.name == a:name
+      let g:user_agent = item.agent
+      let change = 1
+      break
+    endif
+  endfor
+  if change == 1
+    call w3m#Reload()
+  endif
+endfunction
+
+function! w3m#ListUserAgent(A, L, P)
+  let items = []
+  for item in g:w3m#user_agent_list
+    if item.name =~ '^'.a:A
+      call add(items, item.name)
+    endif
+  endfor
+  return items
+endfunction
+
 function! w3m#MatchSearchStart(key)
   cnoremap <buffer> <CR> <CR>:call w3m#MatchSearchEnd()<CR>
   cnoremap <buffer> <ESC> <ESC>:call w3m#MatchSearchEnd()<CR>
@@ -187,12 +210,32 @@ function! w3m#MatchSearchEnd()
   let b:last_match_id = matchadd("Search", keyword)
 endfunction
 
+function! w3m#ToggleSyntax()
+  if b:enable_syntax == 0
+    cal w3m#ChangeSyntaxOnOff(1)
+  else
+    cal w3m#ChangeSyntaxOnOff(0)
+  endif
+endfunction
+
 function! w3m#ChangeSyntaxOnOff(mode)
   let b:enable_syntax = a:mode
   if a:mode == 0
     call clearmatches()
+    call s:message("syntax off")
   else
     call s:applySyntax()
+    call s:message("syntax on")
+  endif
+endfunction
+
+function! w3m#ToggleUseCookie()
+  if g:w3m#option_use_cookie == 0
+    let g:w3m#option_use_cookie = 1
+    call s:message("use_cookie on")
+  else
+    let g:w3m#option_use_cookie = 0
+    call s:message("use_cookie off")
   endif
 endfunction
 
@@ -225,7 +268,7 @@ function! w3m#Open(...)
     call remove(b:history, b:history_index+1, -1)
   endif
   let cols = winwidth(0) - &numberwidth
-  let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', cols, '"' . url . '"' ], ' ') . s:abandon_error
+  let cmdline = s:create_command(url, cols)
   call s:message( strpart('open ' . url, 0, cols - s:message_adjust) )
   call add(b:history, {'url':url, 'outputs':split(s:neglectNeedlessTags(s:system(cmdline)), '\n')} )
   let b:history_index = len(b:history) - 1
@@ -516,16 +559,22 @@ function! s:prepare_buffer()
 endfunction
 
 function! s:keymap()
-  nnoremap <buffer><Plug>(w3m-click)        :<C-u>call w3m#Click(0)<CR>
-  nnoremap <buffer><Plug>(w3m-shift-click)  :<C-u>call w3m#Click(1)<CR>
-  nnoremap <buffer><Plug>(w3m-next-link)    :<C-u>call w3m#NextLink()<CR>
-  nnoremap <buffer><Plug>(w3m-prev-link)    :<C-u>call w3m#PrevLink()<CR>
-  nnoremap <buffer><Plug>(w3m-back)         :<C-u>call w3m#Back()<CR>
-  nnoremap <buffer><Plug>(w3m-forward)      :<C-u>call w3m#Forward()<CR>
-  nnoremap <buffer><Plug>(w3m-show-link)    :<C-u>call w3m#CheckUnderCursor()<CR>
-  nnoremap <buffer><Plug>(w3m-search-start) :<C-u>call w3m#MatchSearchStart('/')<CR>
-  nnoremap <buffer><Plug>(w3m-search-end)   :<C-u>call w3m#MatchSearchEnd()<CR>
-  nnoremap <buffer><Plug>(w3m-hit-a-hint)   :<C-u>call w3m#HitAHintStart()<CR>
+  nnoremap <buffer><Plug>(w3m-click)         :<C-u>call w3m#Click(0)<CR>
+  nnoremap <buffer><Plug>(w3m-shift-click)   :<C-u>call w3m#Click(1)<CR>
+  nnoremap <buffer><Plug>(w3m-address-bar)   :<C-u>call w3m#EditAddress()<CR>
+  nnoremap <buffer><Plug>(w3m-next-link)     :<C-u>call w3m#NextLink()<CR>
+  nnoremap <buffer><Plug>(w3m-prev-link)     :<C-u>call w3m#PrevLink()<CR>
+  nnoremap <buffer><Plug>(w3m-back)          :<C-u>call w3m#Back()<CR>
+  nnoremap <buffer><Plug>(w3m-forward)       :<C-u>call w3m#Forward()<CR>
+  nnoremap <buffer><Plug>(w3m-show-link)     :<C-u>call w3m#CheckUnderCursor()<CR>
+  nnoremap <buffer><Plug>(w3m-show-title)    :<C-u>call w3m#ShowTitle()<CR>
+  nnoremap <buffer><Plug>(w3m-search-start)  :<C-u>call w3m#MatchSearchStart('/')<CR>
+  nnoremap <buffer><Plug>(w3m-search-end)    :<C-u>call w3m#MatchSearchEnd()<CR>
+  nnoremap <buffer><Plug>(w3m-hit-a-hint)    :<C-u>call w3m#HitAHintStart()<CR>
+  nnoremap <buffer><Plug>(w3m-syntax-on)     :<C-u>call w3m#ChangeSyntaxOnOff(1)<CR>
+  nnoremap <buffer><Plug>(w3m-syntax-off)    :<C-u>call w3m#ChangeSyntaxOnOff(0)<CR>
+  nnoremap <buffer><Plug>(w3m-toggle-syntax) :<C-u>call w3m#ToggleSyntax()<CR>
+  nnoremap <buffer><Plug>(w3m-toggle-use-cookie) :<C-u>call w3m#ToggleUseCookie()<CR>
 
   if !exists('g:w3m#disable_default_keymap') || g:w3m#disable_default_keymap == 0
     nmap <buffer><LeftMouse> <LeftMouse><Plug>(w3m-click)
@@ -536,10 +585,13 @@ function! s:keymap()
     nmap <buffer><BS>        <Plug>(w3m-back)
     nmap <buffer><A-LEFT>    <Plug>(w3m-back)
     nmap <buffer><A-RIGHT>   <Plug>(w3m-forward)
+    nmap <buffer>s           <Plug>(w3m-toggle-syntax)
+    nmap <buffer>c           <Plug>(w3m-toggle-use-cookie)
     nmap <buffer>=           <Plug>(w3m-show-link)
     nmap <buffer>/           <Plug>(w3m-search-start)
     nmap <buffer>*           *<Plug>(w3m-search-end)
     nmap <buffer>#           #<Plug>(w3m-search-end)
+    nmap <buffer><m-d>       <Plug>(w3m-address-bar)
     exe 'nmap <buffer>' . g:w3m#hit_a_hint_key . ' <Plug>(w3m-hit-a-hint)'
   endif
 endfunction
@@ -806,6 +858,27 @@ endfunction
 "function! s:tag_input_xxx(tidx)
 "endfunction
 
+function! s:create_command(url, cols)
+  let command_list = [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', a:cols]
+
+  if g:w3m#option_use_cookie != -1
+    call add(command_list, '-o use_cookie=' . g:w3m#option_use_cookie)
+  endif
+  if g:w3m#option_accept_cookie != -1
+    call add(command_list, '-o accept_cookie=' . g:w3m#option_accept_cookie)
+  endif
+  if g:w3m#option_accept_bad_cookie != -1
+    call add(command_list, '-o accept_bad_cookie=' . g:w3m#option_accept_bad_cookie)
+  endif
+  if g:user_agent != ''
+    call add(command_list, '-o user_agent="' . g:user_agent . '"')
+  endif
+
+  call add(command_list, '"' . a:url . '"')
+  let cmdline = join(command_list, ' ') . s:abandon_error
+  return cmdline
+endfunction
+
 function! s:resolveUrl(url)
   if s:isHttpURL(a:url)
     return s:decordeEntRef(a:url)
@@ -902,7 +975,7 @@ function! s:generatePostFile(fid, tidx)
       else
         let value = item.evalue
       endif
-      call add(items,  item.attr.name . '=' . s:encodeUrl(value) . "\r")
+      call add(items, iconv(item.attr.name . '=' . s:encodeUrl(value) . "\r", &encoding, "UTF-8"))
     endif
   endfor
 

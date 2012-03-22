@@ -1,7 +1,16 @@
 " File: plugin/w3m.vim
-" Last Modified: 2012.03.19
-" Version: 0.5.2
+" Last Modified: 2012.03.22
+" Version: 0.6.0
 " Author: yuratomo (twitter @yusetomo)
+
+" 0.6.0 
+" add W3mSetUserAgent
+" add cookie settings.
+"   * w3m#option_use_cookie
+"   * w3m#option_accept_cookie
+"   * w3m#option_accept_bad_cookie
+" add w3m#ToggleSyntaxOnOff() (default key is 's')
+
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
   finish
@@ -41,6 +50,36 @@ endif
 if !exists('g:w3m#hit_a_hint_key')
   let g:w3m#hit_a_hint_key = 'f'
 endif
+if !exists('g:w3m#option_use_cookie')
+  let g:w3m#option_use_cookie = -1
+endif
+if !exists('g:w3m#option_accept_cookie')
+  let g:w3m#option_accept_cookie = -1
+endif
+if !exists('g:w3m#option_accept_bad_cookie')
+  let g:w3m#option_accept_bad_cookie = -1
+endif
+
+if !exists('g:w3m#user_agent')
+  let g:user_agent = ''
+endif
+if !exists('g:w3m#user_agent_list')
+  let g:w3m#user_agent_list = []
+endif
+call add(g:w3m#user_agent_list, {'name':'w3m',     'agent':''})
+call add(g:w3m#user_agent_list, {'name':'Chrome',  'agent':'Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.187 Safari/535.1'})
+call add(g:w3m#user_agent_list, {'name':'Firefox', 'agent':'Mozilla/5.0 (Windows NT 5.1; rv:7.0.1) Gecko/20100101 Firefox/7.0.1'})
+call add(g:w3m#user_agent_list, {'name':'IE6',     'agent':'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; GTB6.6; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'})
+call add(g:w3m#user_agent_list, {'name':'IE7',     'agent':'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; GTB6.6; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'})
+call add(g:w3m#user_agent_list, {'name':'IE8',     'agent':'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; GTB6.6; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'})
+call add(g:w3m#user_agent_list, {'name':'IE9',     'agent':'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0; SLCC2; .NET CLR 2.0.50727; .NET CLR 3.5.30729; .NET CLR 3.0.30729; Media Center PC 6.0; .NET4.0C)'})
+call add(g:w3m#user_agent_list, {'name':'Opera',   'agent':'Opera 11 Opera/9.80 (Windows NT 5.1; U; ja) Presto/2.7.62 Version/11.00'})
+call add(g:w3m#user_agent_list, {'name':'Android', 'agent':'Mozilla/5.0 (Linux; U; Android 2.3.5; ja-jp; T-01D Build/F0001) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1'})
+call add(g:w3m#user_agent_list, {'name':'iOS',     'agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3'})
+call add(g:w3m#user_agent_list, {'name':'KDDI',    'agent':'KDDI-HI31 UP.Browser/6.2.0.5 (GUI) MMP/2.0'})
+call add(g:w3m#user_agent_list, {'name':'DoCoMo',  'agent':'D502i	DoCoMo/1.0/D502i	DoCoMo/1.0/D502i/c10'})
+call add(g:w3m#user_agent_list, {'name':'SoftBank','agent':'SoftBank/1.0/911SH/SHJ001/XXXXXXXXXXXXXXXX Browser/NetFront/3.3 Profile/MIDP-2.0 Configuration/CLDC-1.1'})
+
 if !executable(g:w3m#command)
   echoerr "w3m is not exist!!"
   finish
@@ -57,6 +96,7 @@ command! -nargs=* W3mShowSource :call w3m#ShowSourceAndHeader()
 command! -nargs=* W3mClose :bd
 command! -nargs=* W3mSyntaxOff :call w3m#ChangeSyntaxOnOff(0)
 command! -nargs=* W3mSyntaxOn :call w3m#ChangeSyntaxOnOff(1)
+command! -nargs=1 -complete=customlist,w3m#ListUserAgent W3mSetUserAgent :call w3m#SetUserAgent('<args>')
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

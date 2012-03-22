@@ -37,6 +37,9 @@ Usage
 ###Syntax On:###
     input :W3mSyntaxOn
 
+###Change User-Agent###
+    input :W3mSetUserAgent (w3m|Chrome|Firefox|IE6|IE7|IE8|IE9|Opera|Android|iOS|KDDI|DoCoMo|SoftBank)
+
 Settings
 --------
 
@@ -85,6 +88,9 @@ Default Keymaps
 * &lt;A-RIGHT&gt; Forward page.
 * =         Show href under the cursor.
 * f         Hit-A-Hint.
+* s         Toggle Syntax On/Off.
+* c         Toggle Cookie On/Off.
+* &lt;M-D&gt;     Edit current url.
 
 ScreenShots
 -----------
@@ -98,6 +104,16 @@ ScreenShots
 
 HISTORY
 -------
+
+### v0.6.0 by yuratomo ###
+* add W3mSetUserAgent
+* add cookie settings.
+*     w3m#option_use_cookie
+*     w3m#option_accept_cookie
+*     w3m#option_accept_bad_cookie
+* add w3m#ToggleSyntaxOnOff() (default key is 's')
+* add w3m#ToggleUseCookie() (default key is 'c')
+* add default keymap : nmap <m-d> <Plug>(w3m-address-bar)
 
 ### v0.5.2 by yuratomo ###
 * bug fix 1 (nmap without <buffer>)

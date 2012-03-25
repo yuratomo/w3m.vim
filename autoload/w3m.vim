@@ -1,6 +1,5 @@
 " File: autoload/w3m.vim
-" Last Modified: 2012.03.22
-" Version: 0.6.0
+" Last Modified: 2012.03.25
 " Author: yuratomo (twitter @yusetomo)
 
 let s:save_cpo = &cpo
@@ -151,18 +150,18 @@ endfunction
 
 function! w3m#Reload()
   if exists('b:last_url')
-    call w3m#Open(b:last_url)
+    call w3m#Open(0, b:last_url)
   endif
 endfunction
 
 function! w3m#EditAddress()
   if exists('b:last_url')
     let url = input('url:', b:last_url)
-    call w3m#Open(url)
+    call w3m#Open(0, url)
   endif
 endfunction
 
-function! w3m#SetUserAgent(name)
+function! w3m#SetUserAgent(name, reload)
   let change = 0
   for item in g:w3m#user_agent_list
     if item.name == a:name
@@ -171,7 +170,7 @@ function! w3m#SetUserAgent(name)
       break
     endif
   endfor
-  if change == 1
+  if change == 1 && a:reload == 1
     call w3m#Reload()
   endif
 endfunction
@@ -239,19 +238,17 @@ function! w3m#ToggleUseCookie()
   endif
 endfunction
 
-function! w3m#OpenAtNewTab(...)
-  tabe
-  call w3m#Open(join(a:000, ' '))
-endfunction
-
-function! w3m#Open(...)
+function! w3m#Open(shift, ...)
   if len(a:000) == 0
     if exists('g:w3m#homepage')
-      call w3m#Open(g:w3m#homepage)
+      call w3m#Open(a:shift, g:w3m#homepage)
     else
       call w3m#ShowUsage()
     endif
     return
+  endif
+  if a:shift == 1
+    tabe
   endif
 
   call s:prepare_buffer()
@@ -259,18 +256,75 @@ function! w3m#Open(...)
     let b:history[b:history_index].curpos = [ line('.'), col('.') ]
   endif
 
-  if s:isHttpURL(a:000[0])
-    let url = s:normalizeUrl(a:000[0])
-  else
-    let url = g:w3m#search_engine . join(a:000, ' ')
+  "Load search engines and page filters
+  call w3m#search_engine#Load()
+  call w3m#page_filter#Load()
+
+  "Is the search-engine specified?
+  let use_filter = 0
+  for se in g:w3m#search_engine_list
+    if has_key(se, 'name') && has_key(se, 'url')
+      if se.name == a:000[0]
+        let url = printf(se.url, join(a:000[1:], ' '))
+        let use_filter = 1
+        break
+      endif
+    endif
+  endfor
+
+  if use_filter == 0
+    if s:isHttpURL(a:000[0])
+      let url = s:normalizeUrl(a:000[0])
+    else
+      let url = g:w3m#search_engine . join(a:000, ' ')
+    endif
+
+    "Is the url match page-filter pattern?
+    for se in g:w3m#page_filter_list
+      if has_key(se, 'pattern')
+        if match(url, se.pattern) != -1
+          let use_filter = 1
+          break
+        endif
+      endif
+    endfor
   endif
+
+  "preproc for filter
+  if use_filter == 1
+    if has_key(se, 'preproc')
+      call se.preproc()
+    endif
+  endif
+
   if len(b:history) - 1 > b:history_index
     call remove(b:history, b:history_index+1, -1)
   endif
+
+  "create command
   let cols = winwidth(0) - &numberwidth
   let cmdline = s:create_command(url, cols)
   call s:message( strpart('open ' . url, 0, cols - s:message_adjust) )
-  call add(b:history, {'url':url, 'outputs':split(s:neglectNeedlessTags(s:system(cmdline)), '\n')} )
+
+  "postproc for filter
+  if use_filter == 1
+    if has_key(se, 'postproc')
+      call se.postproc()
+    endif
+  endif
+
+  "execute halfdump
+  let outputs = split(s:neglectNeedlessTags(s:system(cmdline)), '\n')
+
+  "do filter
+  if use_filter == 1
+    if has_key(se, 'filter')
+      let outputs = se.filter(outputs)
+    endif
+  endif
+
+  "add outputs to url-history
+  call add(b:history, {'url':url, 'outputs':outputs} )
   let b:history_index = len(b:history) - 1
   if b:history_index >= g:w3m#max_history_num
     call remove(b:history, 0, 0)
@@ -379,7 +433,7 @@ endfunction
 
 function! s:post(url, file)
   let s:tmp_option = '-post ' . a:file
-  call w3m#Open(a:url)
+  call w3m#Open(0, a:url)
   let s:tmp_option = ''
   call s:message('post ok')
 endfunction
@@ -700,11 +754,7 @@ function! s:tag_a(tidx)
     if s:is_download_target(url)
       call s:downloadFile(url)
     else
-      if b:click_with_shift == 1
-        call w3m#OpenAtNewTab(url)
-      else
-        call w3m#Open(url)
-      endif
+      call w3m#Open(b:click_with_shift, url)
     endif
   endif
   return 1
@@ -733,53 +783,53 @@ function! s:tag_input_image(tidx)
 endfunction
 
 function! s:tag_input_submit(tidx)
-    let idx = a:tidx - 1
-    let action = 'GET'
-    let fid = 0
-    while idx >= 0
-      if b:tag_list[idx].type == s:TAG_START && stridx(b:tag_list[idx].tagname, 'form') == 0
-       if has_key(b:tag_list[idx].attr,'action') 
-         let url = s:resolveUrl(b:tag_list[idx].attr.action)
-         if has_key(b:tag_list[idx].attr,'method') 
-           let action = b:tag_list[idx].attr.method
-         endif
-         if has_key(b:tag_list[idx].attr,'fid') 
-           let fid = b:tag_list[idx].attr.fid
-         endif
-         break
+  let idx = a:tidx - 1
+  let action = 'GET'
+  let fid = 0
+  while idx >= 0
+    if b:tag_list[idx].type == s:TAG_START && stridx(b:tag_list[idx].tagname, 'form') == 0
+     if has_key(b:tag_list[idx].attr,'action') 
+       let url = s:resolveUrl(b:tag_list[idx].attr.action)
+       if has_key(b:tag_list[idx].attr,'method') 
+         let action = b:tag_list[idx].attr.method
        endif
+       if has_key(b:tag_list[idx].attr,'fid') 
+         let fid = b:tag_list[idx].attr.fid
+       endif
+       break
      endif
-     let idx -= 1
-    endwhile
+   endif
+   let idx -= 1
+  endwhile
 
-    if url != ''
-      if action ==? 'GET'
-        let query = s:buildQueryString(fid, a:tidx)
-        call w3m#Open(url . query)
-      elseif action ==? 'POST'
-        let file = s:generatePostFile(fid, a:tidx)
-        call s:post(url, file)
-        call delete(file)
-      else
-        call s:message(toupper(action) . ' is not support')
-      endif
+  if url != ''
+    if action ==? 'GET'
+      let query = s:buildQueryString(fid, a:tidx)
+      call w3m#Open(0, url . query)
+    elseif action ==? 'POST'
+      let file = s:generatePostFile(fid, a:tidx)
+      call s:post(url, file)
+      call delete(file)
+    else
+      call s:message(toupper(action) . ' is not support')
     endif
+  endif
 endfunction
 
 function! s:tag_input_text(tidx)
-    redraw
-    if b:tag_list[a:tidx].edited == 0
-      if has_key(b:tag_list[a:tidx].attr, 'value')
-        let value = b:tag_list[a:tidx].attr.value
-      else
-        let value = ''
-      endif
+  redraw
+  if b:tag_list[a:tidx].edited == 0
+    if has_key(b:tag_list[a:tidx].attr, 'value')
+      let value = b:tag_list[a:tidx].attr.value
     else
-      let value = b:tag_list[a:tidx].evalue
+      let value = ''
     endif
-    let b:tag_list[a:tidx].evalue = input('input:', value)
-    let b:tag_list[a:tidx].edited = 1
-    call s:applyEditedInputValues()
+  else
+    let value = b:tag_list[a:tidx].evalue
+  endif
+  let b:tag_list[a:tidx].evalue = input('input:', value)
+  let b:tag_list[a:tidx].edited = 1
+  call s:applyEditedInputValues()
 endfunction
 
 function! s:tag_input_textarea(tidx)
@@ -787,15 +837,15 @@ function! s:tag_input_textarea(tidx)
 endfunction
 
 function! s:tag_input_password(tidx)
-    redraw
-    if b:tag_list[a:tidx].edited == 0
-      let value = b:tag_list[a:tidx].attr.value
-    else
-      let value = b:tag_list[a:tidx].evalue
-    endif
-    let b:tag_list[a:tidx].evalue = input('input password:', value)
-    let b:tag_list[a:tidx].edited = 1
-    call s:applyEditedInputValues()
+  redraw
+  if b:tag_list[a:tidx].edited == 0
+    let value = b:tag_list[a:tidx].attr.value
+  else
+    let value = b:tag_list[a:tidx].evalue
+  endif
+  let b:tag_list[a:tidx].evalue = input('input password:', value)
+  let b:tag_list[a:tidx].edited = 1
+  call s:applyEditedInputValues()
 endfunction
 
 function! s:tag_input_radio(tidx)

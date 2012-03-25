@@ -1,0 +1,25 @@
+" File: autoload/w3m/search_engines/xxx.vim
+" Last Modified: 
+" Version: 
+" Author: 
+
+let s:engine = w3m#InitSearchEngine('xxx', 'search-engine-url with %s')
+
+function! s:engine.preproc()
+  "for example. Change user-agent.
+  let s:user_agent_backup = g:user_agent
+  call w3m#SetUserAgent('Chrome', 0)
+endfunction
+
+function! s:engine.postproc()
+  "for example. Undo user-agent.
+  let g:user_agent = s:user_agent_backup
+  unlet s:user_agent_backup
+endfunction
+
+function! s:engine.filter(outputs)
+  "for example. Turn off the first and last raw.
+  return a:outputs[1:-1]
+endfunctio
+
+call w3m#AddSearchEngin(s:engine)

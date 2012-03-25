@@ -1,16 +1,7 @@
 " File: plugin/w3m.vim
-" Last Modified: 2012.03.22
-" Version: 0.6.0
+" Last Modified: 2012.03.25
+" Version: 0.7.0
 " Author: yuratomo (twitter @yusetomo)
-
-" 0.6.0 
-" add W3mSetUserAgent
-" add cookie settings.
-"   * w3m#option_use_cookie
-"   * w3m#option_accept_cookie
-"   * w3m#option_accept_bad_cookie
-" add w3m#ToggleSyntaxOnOff() (default key is 's')
-
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
   finish
@@ -59,9 +50,14 @@ endif
 if !exists('g:w3m#option_accept_bad_cookie')
   let g:w3m#option_accept_bad_cookie = -1
 endif
-
 if !exists('g:w3m#user_agent')
   let g:user_agent = ''
+endif
+if !exists('g:w3m#search_engine_list')
+  let g:w3m#search_engine_list = []
+endif
+if !exists('g:w3m#page_filter_list')
+  let g:w3m#page_filter_list = []
 endif
 if !exists('g:w3m#user_agent_list')
   let g:w3m#user_agent_list = []
@@ -85,8 +81,8 @@ if !executable(g:w3m#command)
   finish
 endif
 
-command! -nargs=* W3m :call w3m#Open(<f-args>)
-command! -nargs=* W3mTab :call w3m#OpenAtNewTab(<f-args>)
+command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(0, <f-args>)
+command! -nargs=* -complete=customlist,w3m#ListSearchEngine W3mTab :call w3m#Open(1, <f-args>)
 command! -nargs=* W3mCopyUrl :call w3m#CopyUrl('*')
 command! -nargs=* W3mReload :call w3m#Reload()
 command! -nargs=* W3mAddressBar :call w3m#EditAddress()
@@ -96,7 +92,7 @@ command! -nargs=* W3mShowSource :call w3m#ShowSourceAndHeader()
 command! -nargs=* W3mClose :bd
 command! -nargs=* W3mSyntaxOff :call w3m#ChangeSyntaxOnOff(0)
 command! -nargs=* W3mSyntaxOn :call w3m#ChangeSyntaxOnOff(1)
-command! -nargs=1 -complete=customlist,w3m#ListUserAgent W3mSetUserAgent :call w3m#SetUserAgent('<args>')
+command! -nargs=1 -complete=customlist,w3m#ListUserAgent W3mSetUserAgent :call w3m#SetUserAgent('<args>', 1)
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

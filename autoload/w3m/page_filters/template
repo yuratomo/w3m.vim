@@ -1,0 +1,25 @@
+" File: autoload/w3m/page_filters/xxx.vim
+" Last Modified: 
+" Version: 
+" Author: 
+
+let s:filter = w3m#InitPageFilter('xxx', 'url-match-pattern')
+
+function! s:filter.preproc()
+  "for example. Change user-agent.
+  let s:user_agent_backup = g:user_agent
+  call w3m#SetUserAgent('Chrome', 0)
+endfunction
+
+function! s:filter.postproc()
+  "for example. Undo user-agent.
+  let g:user_agent = s:user_agent_backup
+  unlet s:user_agent_backup
+endfunction
+
+function! s:filter.filter(outputs)
+  "for example. Turn off the first and last raw.
+  return a:outputs[1:-1]
+endfunction
+
+call w3m#AddPageFilter(s:filter)

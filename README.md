@@ -15,22 +15,22 @@ Usage
     input :W3m search-engine-name keyword
 
     [search-engine-name]
-    *alc              : space alc (http://eow.alc.co.jp)
-    *android          : android SDK (http://www.androidjavadoc.com)
-    *as3              : action script 3.0 (http://livedocs.adobe.com/flash/9.0_jp/)
-    *go               : go language (http://golang.jp/)
-    *google           : google (http://www.google.co.jp/)
-    *java             : JDK6 (http://java.sun.com/javase/ja/6/docs/ja/api)
-    *man              : man (http://linuxjm.sourceforge.jp/html/)
-    *msdn             : MSDN (http://msdn.microsoft.com/ja-jp/library/)
-    *perl             : PERL (http://perldoc.jp/func/)
-    *php              : PHP (http://php.net/manual/ja)
-    *python           : Python (http://www.python.jp/doc/)
-    *rfc              : RFC (http://tools.ietf.org/html)
-    *ruby             : ruby (http://doc.ruby-lang.org/ja/1.9.3/function/)
-    *wikipedia        : wikipedia (http://ja.wikipedia.org/wiki/)
-    *yahoo            : yahoo (http://search.yahoo.co.jp/search)
-    *yahoodict        : yahoo dictionary (http://dic.search.yahoo.co.jp/)
+    alc              : space alc (http://eow.alc.co.jp)
+    android          : android SDK (http://www.androidjavadoc.com)
+    as3              : action script 3.0 (http://livedocs.adobe.com/flash/9.0_jp/)
+    go               : go language (http://golang.jp/)
+    google           : google (http://www.google.co.jp/)
+    java             : JDK6 (http://java.sun.com/javase/ja/6/docs/ja/api)
+    man              : man (http://linuxjm.sourceforge.jp/html/)
+    msdn             : MSDN (http://msdn.microsoft.com/ja-jp/library/)
+    perl             : PERL (http://perldoc.jp/func/)
+    php              : PHP (http://php.net/manual/ja)
+    python           : Python (http://www.python.jp/doc/)
+    rfc              : RFC (http://tools.ietf.org/html)
+    ruby             : ruby (http://doc.ruby-lang.org/ja/1.9.3/function/)
+    wikipedia        : wikipedia (http://ja.wikipedia.org/wiki/)
+    yahoo            : yahoo (http://search.yahoo.co.jp/search)
+    yahoodict        : yahoo dictionary (http://dic.search.yahoo.co.jp/)
 
 ###Open URL At New Tab:###
     input :W3mTab [url or keyword]
@@ -71,6 +71,7 @@ Settings
     highlight! link w3mBold      Comment
     highlight! link w3mUnderline Underlined
     highlight! link w3mHitAHint  Question
+    highlight! link w3mAnchor    Label
 
 ###Use Proxy:###
     let &HTTP_PROXY='http://xxx.xxx/:8080'
@@ -125,6 +126,10 @@ ScreenShots
 
 HISTORY
 -------
+
+### v0.8.0 by yuratomo
+* Anchor Correspondence
+* add Anchor-Hilight (w3mAnchor)
 
 ### v0.7.0 by yuratomo ###
 * Search by specifying search engine (#4)

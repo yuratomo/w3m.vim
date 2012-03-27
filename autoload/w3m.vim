@@ -290,6 +290,14 @@ function! w3m#Open(shift, ...)
     endfor
   endif
 
+  "Is url include anchor?
+  let anchor = ''
+  let aidx = stridx(url, '#')
+  if aidx >= 0
+    let anchor = url[ aidx : ]
+    let url = url[0 : aidx - 1 ]
+  endif
+
   "preproc for filter
   if use_filter == 1
     if has_key(se, 'preproc')
@@ -332,6 +340,11 @@ function! w3m#Open(shift, ...)
   endif
 
   call s:openCurrentHistory()
+
+  "move to anchor
+  if anchor != ''
+    call s:moveToAnchor(anchor)
+  endif
 endfunction
 
 function! w3m#Back()
@@ -666,6 +679,9 @@ function! s:default_highligh()
   if !hlexists('w3mLink')
     highlight! link w3mLink Function
   endif
+  if !hlexists('w3mAnchor')
+    highlight! link w3mAnchor Label
+  endif
   if !hlexists('w3mHitAHint')
     highlight! link w3mHitAHint Question
   endif
@@ -680,6 +696,7 @@ function! s:applySyntax()
   let underline_s = -1
   let input_s = -1
   let input_highlight = ""
+  let link_anchor = 0
   for tag in b:tag_list
     if link_s == -1 && tag.tagname ==? 'a' && tag.type == s:TAG_START
       if tag.col > 0
@@ -687,9 +704,17 @@ function! s:applySyntax()
       else
         let link_s = 0
       endif
+      if has_key(tag.attr, 'href') && tag.attr.href[0] == '#'
+        let link_anchor = 1
+      endif
     elseif link_s != -1 && tag.tagname ==? 'a' && tag.type == s:TAG_END
       let link_e = tag.col
-      call matchadd('w3mLink', '\%>'.link_s.'c\%<'.link_e.'c\%'.tag.line.'l')
+      if link_anchor == 1
+        call matchadd('w3mAnchor', '\%>'.link_s.'c\%<'.link_e.'c\%'.tag.line.'l')
+      else
+        call matchadd('w3mLink', '\%>'.link_s.'c\%<'.link_e.'c\%'.tag.line.'l')
+      endif
+      let link_anchor = 0
       let link_s = -1
 
     elseif bold_s == -1 && tag.tagname ==? 'b' && tag.type == s:TAG_START
@@ -753,11 +778,14 @@ function! s:tag_a(tidx)
     let url = s:resolveUrl(b:tag_list[a:tidx].attr.href)
     if s:is_download_target(url)
       call s:downloadFile(url)
+    elseif s:is_anchor(url)
+      call s:moveToAnchor(url)
     else
       call w3m#Open(b:click_with_shift, url)
     endif
+    return 1
   endif
-  return 1
+  return 0
 endfunction
 
 function! s:tag_input(tidx)
@@ -932,6 +960,8 @@ endfunction
 function! s:resolveUrl(url)
   if s:isHttpURL(a:url)
     return s:decordeEntRef(a:url)
+  elseif s:is_anchor(a:url)
+    return a:url
   else
     if a:url[0] == '/'
       let base = strlen(b:last_url) - 1
@@ -1231,10 +1261,30 @@ function! s:downloadFile(url)
   endif
 endfunction
 
-function! s:is_download_target(url)
-  let dot = strridx(a:url, '.')
-  let ext = strpart(a:url, dot+1)
+function! s:is_download_target(href)
+  let dot = strridx(a:href, '.')
+  if dot == -1
+    return 0
+  endif
+  let ext = strpart(a:href, dot+1)
   if index(g:w3m#download_ext, tolower(ext)) >= 0
+    return 1
+  endif
+  return 0
+endfunction
+
+function! s:moveToAnchor(href)
+  let aname = a:href[1:]
+  for tag in b:tag_list
+    if has_key(tag.attr, 'name') && tag.attr.name ==? aname
+      call cursor(tag.line, tag.col) 
+      break
+    endif
+  endfor
+endfunction
+
+function! s:is_anchor(href)
+  if a:href[0] ==? '#'
     return 1
   endif
   return 0

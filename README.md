@@ -127,6 +127,10 @@ ScreenShots
 HISTORY
 -------
 
+### v0.8.1 by yuratomo
+* modify search engine name. (java -> jdk)
+* modify msdn's page-filter logic.
+
 ### v0.8.0 by yuratomo
 * Anchor Correspondence
 * add Anchor-Hilight (w3mAnchor)

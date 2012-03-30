@@ -5,6 +5,13 @@ Description
 -----------
 w3m.vim is a plugin on vim for w3m that is a console web browser.
 
+Requirements
+------------
+w3m.vim is requires w3m. please install it.
+And through the path to the w3m.exe or define vimrc as follows.
+
+    let g:w3m#command = 'C:\hoge\w3m.exe'
+
 Usage
 -----
 
@@ -34,6 +41,9 @@ Usage
 
 ###Open URL At New Tab:###
     input :W3mTab [url or keyword]
+
+###Open URL At Split Window:###
+    input :W3mSplit [url or keyword]
 
 ###Close:###
     input :W3mClose
@@ -91,10 +101,12 @@ Settings
 
 ###Disable Defualt Keymap:###
 You set as follows if you do not want to use default keymap.
+
     let g:w3m#disable_default_keymap = 1
 
 ###Disable Vimproc:###
 You set as follows if you do not want to use vimproc.
+
     let g:w3m#disable_vimproc = 1
 
 Default Keymaps
@@ -126,6 +138,12 @@ ScreenShots
 
 HISTORY
 -------
+
+### v0.8.2 by yuratomo
+* Add :W3mSplit
+* Add search-engine of 2ch
+* Fixed bug when check box is pressed.
+* Debug and tool function move to another source.
 
 ### v0.8.1 by yuratomo
 * modify search engine name. (java -> jdk)

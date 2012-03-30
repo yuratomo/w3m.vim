@@ -59,50 +59,6 @@ function! w3m#CheckUnderCursor()
   endwhile
 endfunction
 
-function! w3m#Debug()
-  if !exists('b:last_url')
-    return
-  endif
-  setlocal modifiable
-
-  let didx = len(b:display_lines)
-  call setline(didx, '--------- tags --------')
-  let didx += 1
-  for dline in b:tag_list
-    call setline(didx, 
-      \ dline.line.",".
-      \ dline.col.",".
-      \ dline.type.",".
-      \ dline.tagname.":".
-      \ string(dline.attr))
-    let didx += 1
-  endfor
-  call setline(didx, '--------- forms --------')
-  let didx += 1
-  for dline in b:form_list
-    call setline(didx, 
-      \ dline.line.",".
-      \ dline.col.",".
-      \ dline.type.",".
-      \ dline.tagname.":".
-      \ string(dline.attr))
-    let didx += 1
-  endfor
-  call setline(didx, '--------- dbgmsg --------')
-  let didx += 1
-  "call setline(didx, 'query=' . s:buildQueryString())
-  "let didx += 1
-  call setline(didx, b:debug_msg)
-  let didx += 1
-
-  setlocal nomodifiable
-endfunction
-function! s:ddd(msg)
-  if g:w3m#debug == 1 && exists('b:debug_msg')
-    call add(b:debug_msg, a:msg)
-  endif
-endfunction
-
 function! w3m#ShowUsage()
   echo "[Usage] :W3m url"
   echo "example :W3m http://www.yahoo.co.jp"
@@ -238,17 +194,19 @@ function! w3m#ToggleUseCookie()
   endif
 endfunction
 
-function! w3m#Open(shift, ...)
+function! w3m#Open(mode, ...)
   if len(a:000) == 0
     if exists('g:w3m#homepage')
-      call w3m#Open(a:shift, g:w3m#homepage)
+      call w3m#Open(a:mode, g:w3m#homepage)
     else
       call w3m#ShowUsage()
     endif
     return
   endif
-  if a:shift == 1
+  if a:mode == 1
     tabe
+  elseif a:mode == 2
+    new
   endif
 
   call s:prepare_buffer()
@@ -880,7 +838,7 @@ function! s:tag_input_radio(tidx)
   redraw
   " ‘¼‚Ì“¯‚¶name‚Ìechecked‚ðƒŠƒZƒbƒg
   for item in b:form_list
-    if has_key(item, 'type') && item.type ==? 'radio'
+    if has_key(item.attr, 'type') && item.attr.type ==? 'radio'
       let item.edited = 1
       let item.echecked = 0
     endif
@@ -992,7 +950,7 @@ function! s:buildQueryString(fid, tidx)
         continue
       endif
       if has_key(item.attr,'type')
-        if item.attr.type == 'submit' && item.attr.name != b:tag_list[a:tidx].attr.name
+        if item.attr.type == 'submit' && has_key(item.attr, 'name') && item.attr.name != b:tag_list[a:tidx].attr.name
           continue
         elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
           if item.edited == 1
@@ -1245,7 +1203,7 @@ function! s:message(msg)
   endif
 endfunction
 
-function s:system(string)
+function! s:system(string)
   if exists('*vimproc#system()') && g:w3m#disable_vimproc == 0
     return vimproc#system(a:string)
   else

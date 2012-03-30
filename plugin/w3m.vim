@@ -1,6 +1,6 @@
 " File: plugin/w3m.vim
-" Last Modified: 2012.03.27
-" Version: 0.8.0
+" Last Modified: 2012.03.29
+" Version: 0.8.2
 " Author: yuratomo (twitter @yusetomo)
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -83,6 +83,7 @@ endif
 
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(0, <f-args>)
 command! -nargs=* -complete=customlist,w3m#ListSearchEngine W3mTab :call w3m#Open(1, <f-args>)
+command! -nargs=* -complete=customlist,w3m#ListSearchEngine W3mSplit :call w3m#Open(2, <f-args>)
 command! -nargs=* W3mCopyUrl :call w3m#CopyUrl('*')
 command! -nargs=* W3mReload :call w3m#Reload()
 command! -nargs=* W3mAddressBar :call w3m#EditAddress()

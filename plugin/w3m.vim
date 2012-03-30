@@ -83,16 +83,6 @@ endif
 
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(0, <f-args>)
 command! -nargs=* -complete=customlist,w3m#ListSearchEngine W3mTab :call w3m#Open(1, <f-args>)
-command! -nargs=* W3mCopyUrl :call w3m#CopyUrl('*')
-command! -nargs=* W3mReload :call w3m#Reload()
-command! -nargs=* W3mAddressBar :call w3m#EditAddress()
-command! -nargs=* W3mShowTitle :call w3m#ShowTitle()
-command! -nargs=* W3mShowExtenalBrowser :call w3m#ShowExternalBrowser()
-command! -nargs=* W3mShowSource :call w3m#ShowSourceAndHeader()
-command! -nargs=* W3mClose :bd
-command! -nargs=* W3mSyntaxOff :call w3m#ChangeSyntaxOnOff(0)
-command! -nargs=* W3mSyntaxOn :call w3m#ChangeSyntaxOnOff(1)
-command! -nargs=1 -complete=customlist,w3m#ListUserAgent W3mSetUserAgent :call w3m#SetUserAgent('<args>', 1)
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

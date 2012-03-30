@@ -1,6 +1,7 @@
 if exists('b:did_ftplugin')
   finish
 endif
+let b:did_ftplugin = 1
 
 command! -buffer -nargs=* W3mCopyUrl :call w3m#CopyUrl('*')
 command! -buffer -nargs=* W3mReload :call w3m#Reload()

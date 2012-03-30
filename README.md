@@ -142,6 +142,7 @@ HISTORY
 ### v0.8.2 by yuratomo
 * Add :W3mSplit
 * Add search-engine of 2ch
+* Should be buffer local commands.
 * Fixed bug when check box is pressed.
 * Debug and tool function move to another source.
 

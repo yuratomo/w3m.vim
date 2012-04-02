@@ -113,7 +113,10 @@ endfunction
 function! w3m#EditAddress()
   if exists('b:last_url')
     let url = input('url:', b:last_url)
-    call w3m#Open(0, url)
+    if url != ""
+      call w3m#Open(0, url)
+      echo url
+    endif
   endif
 endfunction
 
@@ -568,7 +571,6 @@ function! s:prepare_buffer()
     let b:display_lines = []
     let b:tag_list = []
     let b:form_list = []
-    let b:debug_msg = []
     let b:click_with_shift = 0
     let b:last_match_id = -1
     let b:enable_syntax = 1
@@ -790,10 +792,10 @@ function! s:tag_input_submit(tidx)
 
   if url != ''
     if action ==? 'GET'
-      let query = s:buildQueryString(fid, a:tidx)
+      let query = w3m#buildQueryString(fid, a:tidx, 1)
       call w3m#Open(0, url . query)
     elseif action ==? 'POST'
-      let file = s:generatePostFile(fid, a:tidx)
+      let file = w3m#generatePostFile(fid, a:tidx)
       call s:post(url, file)
       call delete(file)
     else
@@ -941,16 +943,17 @@ function! s:resolveUrl(url)
   endif
 endfunction
 
-function! s:buildQueryString(fid, tidx)
+function! w3m#buildQueryString(fid, tidx, is_encode)
   let query = ''
   let first = 1
   for item in b:form_list
-    if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
+    if has_key(item.attr,'name') && item.attr.name != ''
       if !has_key(item.attr,'fid') || item.attr.fid != a:fid
         continue
       endif
       if has_key(item.attr,'type')
-        if item.attr.type == 'submit' && has_key(item.attr, 'name') && item.attr.name != b:tag_list[a:tidx].attr.name
+        "if item.attr.type == 'submit' && has_key(item.attr, 'name') && item.attr.name != b:tag_list[a:tidx].attr.name
+        if item.attr.type == 'submit'
           continue
         elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
           if item.edited == 1
@@ -972,52 +975,28 @@ function! s:buildQueryString(fid, tidx)
         let query .= '&'
       endif
       if item.edited == 0
-        let value = item.attr.value
+        if has_key(item.attr,'value')
+          let value = item.attr.value
+        else
+          let value = ''
+        endif
       else
         let value = item.evalue
       endif
-      let query .= item.attr.name . '=' . s:encodeUrl(value)
+      if a:is_encode == 1
+        let query .= item.attr.name . '=' . s:encodeUrl(value)
+      else
+        let query .= item.attr.name . '=' . value
+      endif
     endif
   endfor
-  echo query
   return query
 endfunction
 
-function! s:generatePostFile(fid, tidx)
+function! w3m#generatePostFile(fid, tidx)
   let tmp_file = tempname()
-  let items = []
-
-  for item in b:form_list
-    if has_key(item.attr,'name') && has_key(item.attr,'value') && item.attr.name != ''
-      if !has_key(item.attr,'fid') || item.attr.fid != a:fid
-        continue
-      endif
-      if has_key(item.attr,'type')
-        if item.attr.type == 'submit' && item.attr.name != b:tag_list[a:tidx].attr.name
-          continue
-        elseif item.attr.type == 'radio' || item.attr.type == 'checkbox'
-          if item.edited == 1
-            if item.echecked == 0
-              continue
-            endif
-          else
-            if !has_key(item.attr, 'checked')
-              continue
-            endif
-          endif
-        endif
-      endif
-
-      if item.edited == 0
-        let value = item.attr.value
-      else
-        let value = item.evalue
-      endif
-      call add(items, iconv(item.attr.name . '=' . s:encodeUrl(value) . "\r", &encoding, "UTF-8"))
-    endif
-  endfor
-
-  call writefile(items, tmp_file)
+  let items = w3m#buildQueryString(a:fid, a:tidx, 0)[1:] . '&'
+  call writefile([ items ], tmp_file)
   return tmp_file
 endfunction
 

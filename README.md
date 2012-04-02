@@ -139,6 +139,11 @@ ScreenShots
 HISTORY
 -------
 
+### v0.8.3 by yuratomo
+* Fixed bug when w3m#EditAddress()
+* Add search-engine of vims (www.vim.org/scripts)
+* Modify post logic
+
 ### v0.8.2 by yuratomo
 * Add :W3mSplit
 * Add search-engine of 2ch

@@ -2,13 +2,17 @@
 " Last Modified: 2012.03.30
 " Author: yuratomo (twitter @yusetomo)
 
-function! w3m#debug#Dump()
+function! w3m#debug#dump()
   if !exists('b:last_url')
     return
   endif
   setlocal modifiable
 
   let didx = len(b:display_lines)
+  call setline(didx, '--------- url --------')
+  let didx += 1
+  call setline(didx, 'url: ' .  b:last_url)
+  let didx += 1
   call setline(didx, '--------- tags --------')
   let didx += 1
   for dline in b:tag_list
@@ -37,8 +41,13 @@ function! w3m#debug#Dump()
   setlocal nomodifiable
 endfunction
 
-function! w3m#debug#ShowQuery()
+function! w3m#debug#showQuery()
   let fid = input('input fid:', 0)
-  echo s:buildQueryString(fid, 0)
+  echo w3m#buildQueryString(fid, 0, 0)
+endfunction
+
+function! w3m#debug#copyQuery()
+  let fid = input('input fid:', 0)
+  call setreg('*', w3m#buildQueryString(fid, 0, 0))
 endfunction
 

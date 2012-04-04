@@ -67,7 +67,7 @@ function! w3m#history#Show()
     let num = input('Please input history number:', '')
     let item = g:w3m#history#list[num]
     if num != '' && num >= 0 && num < len(g:w3m#history#list)
-      call w3m#tools#openHistory(item)
+      call w3m#api#openHistory(item)
     endif
   endif
 endfunction

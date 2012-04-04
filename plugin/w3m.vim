@@ -1,6 +1,6 @@
 " File: plugin/w3m.vim
-" Last Modified: 2012.03.29
-" Version: 0.8.3
+" Last Modified: 2012.04.04
+" Version: 1.0.0
 " Author: yuratomo (twitter @yusetomo)
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -9,6 +9,8 @@ endif
 
 let s:save_cpo = &cpo
 set cpo&vim
+
+let [g:w3m#OPEN_NORMAL,g:w3m#OPEN_SPLIT,g:w3m#OPEN_TAB] = range(3)
 
 if !exists('g:w3m#command')
   let g:w3m#command = 'w3m'
@@ -27,7 +29,10 @@ if !exists('g:w3m#search_engine')
     \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
 endif
 if !exists('g:w3m#max_history_num')
-  let g:w3m#max_history_num = 10
+  let g:w3m#max_history_num = 30
+endif
+if !exists('g:w3m#max_cache_page_num')
+  let g:w3m#max_cache_page_num = 10
 endif
 if !exists('g:w3m#external_browser')
   let g:w3m#external_browser = 'chrome'
@@ -81,9 +86,11 @@ if !executable(g:w3m#command)
   finish
 endif
 
-command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(0, <f-args>)
-command! -nargs=* -complete=customlist,w3m#search_engine#List W3mTab :call w3m#Open(1, <f-args>)
-command! -nargs=* -complete=customlist,w3m#search_engine#List W3mSplit :call w3m#Open(2, <f-args>)
+command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(g:w3m#OPEN_NORMAL, <f-args>)
+command! -nargs=* -complete=customlist,w3m#search_engine#List W3mTab :call w3m#Open(g:w3m#OPEN_TAB, <f-args>)
+command! -nargs=* -complete=customlist,w3m#search_engine#List W3mSplit :call w3m#Open(g:w3m#OPEN_SPLIT, <f-args>)
+command! -nargs=0 W3mHistory :call w3m#history#Show()
+command! -nargs=0 W3mHistoryClear :call w3m#history#Clear()
 
 let &cpo = s:save_cpo
 unlet s:save_cpo

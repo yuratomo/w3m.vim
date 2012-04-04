@@ -35,8 +35,12 @@ function! w3m#debug#dump()
       \ string(dline.attr))
     let didx += 1
   endfor
-  call setline(didx, '--------- dbgmsg --------')
+  call setline(didx, '--------- global history --------')
   let didx += 1
+  for hist in g:w3m#history
+    call setline(didx, string(hist))
+    let didx += 1
+  endfor
 
   setlocal nomodifiable
 endfunction
@@ -49,5 +53,8 @@ endfunction
 function! w3m#debug#copyQuery()
   let fid = input('input fid:', 0)
   call setreg('*', w3m#buildQueryString(fid, 0, 0))
+endfunction
+
+function! w3m#debug#test()
 endfunction
 

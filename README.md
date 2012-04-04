@@ -71,6 +71,12 @@ Usage
 ###Change User-Agent###
     input :W3mSetUserAgent (w3m|Chrome|Firefox|IE6|IE7|IE8|IE9|Opera|Android|iOS|KDDI|DoCoMo|SoftBank)
 
+###Open from history:###
+    input :W3mHistory
+
+###Clear history:###
+    input :W3mHistoryClear
+
 Settings
 --------
 
@@ -138,6 +144,13 @@ ScreenShots
 
 HISTORY
 -------
+
+### v1.0.0 by yuratomo
+* Add :W3mHistory
+* Add :W3mHistoryClear
+* Add syntax/w3m.vim
+* Add w3m#api#getHistoryList() function 
+* Add w3m#api#openHistory() function 
 
 ### v0.8.3 by yuratomo
 * Fixed bug when w3m#EditAddress()

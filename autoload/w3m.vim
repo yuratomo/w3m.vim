@@ -1,13 +1,13 @@
 " File: autoload/w3m.vim
-" Last Modified: 2012.03.25
+" Last Modified: 2012.04.04
 " Author: yuratomo (twitter @yusetomo)
 
 let s:save_cpo = &cpo
 set cpo&vim
 
 let s:w3m_title = 'w3m'
-let s:message_adjust = 20
 let s:tmp_option = ''
+let s:message_adjust = 20
 let [s:TAG_START,s:TAG_END,s:TAG_BOTH,s:TAG_UNKNOWN] = range(4)
 
 if has('win32')
@@ -15,6 +15,8 @@ if has('win32')
 else
   let s:abandon_error = ' 2> /dev/null'
 endif
+
+call w3m#history#Load()
 
 function! w3m#BufWinEnter()
   call s:applySyntax()
@@ -65,6 +67,14 @@ function! w3m#ShowUsage()
 endfunction
 
 function! w3m#ShowTitle()
+  let cols = winwidth(0) - &numberwidth
+
+  " resolve title from cache
+  if has_key(b:history[b:history_index], 'title') 
+    call s:message( strpart(b:history[b:history_index].title, 0, cols - s:message_adjust) )
+    return
+  endif
+
   if exists('b:last_url')
     let title = "no title"
     for tag in b:tag_list
@@ -73,9 +83,11 @@ function! w3m#ShowTitle()
         break
       endif
     endfor
-    let cols = winwidth(0) - &numberwidth
     call s:message( strpart(title, 0, cols - s:message_adjust) )
   endif
+
+  " cache title
+  let b:history[b:history_index].title = title
 endfunction
 
 function! w3m#ShowSourceAndHeader()
@@ -106,7 +118,7 @@ endfunction
 
 function! w3m#Reload()
   if exists('b:last_url')
-    call w3m#Open(0, b:last_url)
+    call w3m#Open(g:w3m#OPEN_NORMAL, b:last_url)
   endif
 endfunction
 
@@ -114,7 +126,7 @@ function! w3m#EditAddress()
   if exists('b:last_url')
     let url = input('url:', b:last_url)
     if url != ""
-      call w3m#Open(0, url)
+      call w3m#Open(g:w3m#OPEN_NORMAL, url)
       echo url
     endif
   endif
@@ -206,9 +218,9 @@ function! w3m#Open(mode, ...)
     endif
     return
   endif
-  if a:mode == 1
+  if a:mode == g:w3m#OPEN_TAB
     tabe
-  elseif a:mode == 2
+  elseif a:mode == g:w3m#OPEN_SPLIT
     new
   endif
 
@@ -266,10 +278,6 @@ function! w3m#Open(mode, ...)
     endif
   endif
 
-  if len(b:history) - 1 > b:history_index
-    call remove(b:history, b:history_index+1, -1)
-  endif
-
   "create command
   let cols = winwidth(0) - &numberwidth
   let cmdline = s:create_command(url, cols)
@@ -293,14 +301,21 @@ function! w3m#Open(mode, ...)
   endif
 
   "add outputs to url-history
+  if len(b:history) - 1 > b:history_index
+    call remove(b:history, b:history_index+1, -1)
+  endif
   call add(b:history, {'url':url, 'outputs':outputs} )
   let b:history_index = len(b:history) - 1
-  if b:history_index >= g:w3m#max_history_num
+  if b:history_index >= g:w3m#max_cache_page_num
     call remove(b:history, 0, 0)
     let b:history_index = len(b:history) - 1
   endif
 
   call s:openCurrentHistory()
+
+  "add global history
+  let title = b:history[b:history_index].title
+  call w3m#history#Regist(title, a:000)
 
   "move to anchor
   if anchor != ''
@@ -407,7 +422,7 @@ endfunction
 
 function! s:post(url, file)
   let s:tmp_option = '-post ' . a:file
-  call w3m#Open(0, a:url)
+  call w3m#Open(g:w3m#OPEN_NORMAL, a:url)
   let s:tmp_option = ''
   call s:message('post ok')
 endfunction
@@ -741,7 +756,11 @@ function! s:tag_a(tidx)
     elseif s:is_anchor(url)
       call s:moveToAnchor(url)
     else
-      call w3m#Open(b:click_with_shift, url)
+      let open_mode = g:w3m#OPEN_NORMAL
+      if b:click_with_shift == 1
+        let open_mode = g:w3m#OPEN_SPLIT
+      endif
+      call w3m#Open(open_mode, url)
     endif
     return 1
   endif
@@ -793,7 +812,7 @@ function! s:tag_input_submit(tidx)
   if url != ''
     if action ==? 'GET'
       let query = w3m#buildQueryString(fid, a:tidx, 1)
-      call w3m#Open(0, url . query)
+      call w3m#Open(g:w3m#OPEN_NORMAL, url . query)
     elseif action ==? 'POST'
       let file = w3m#generatePostFile(fid, a:tidx)
       call s:post(url, file)

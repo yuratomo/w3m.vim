@@ -82,6 +82,7 @@ Settings
 
 ###Hilight:###
     highlight! link w3mLink      Function
+    highlight! link w3mLinkHover SpecialKey
     highlight! link w3mSubmit    Special
     highlight! link w3mInput     String
     highlight! link w3mBold      Comment
@@ -114,6 +115,13 @@ You set as follows if you do not want to use default keymap.
 You set as follows if you do not want to use vimproc.
 
     let g:w3m#disable_vimproc = 1
+
+###Toggle Link Hovering###
+By default links under the curosr are highlighted. Turn off with one of the following
+
+    unlet g:w3m#set_hover_on
+    let g:w3m#hover_set_on = -1 
+    " a value less than or equal to 0 will turn it off
 
 Default Keymaps
 ---------------

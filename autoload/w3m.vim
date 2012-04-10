@@ -766,15 +766,15 @@ if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on > 0
       if tag.line == cl && tag.tagname ==? 'a' 
         if tag.col > cc 
           let start_found = 1
-          if tstart == -1
-            let tstart = 0
-          endif
         endif
         if tag.type == s:TAG_START && start_found < 0
           " This is a possible start
           let tstart = tag.col - 1   
           let tend   = tag.col - 1 
           continue
+        endif
+        if tag.type == s:TAG_END && start_found < 0
+          let tstart = -1
         endif
         if tag.type == s:TAG_END && start_found > 0  
           " We found the end

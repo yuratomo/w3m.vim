@@ -786,7 +786,7 @@ if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on > 0
     endfor
     if exists('g:w3m#MatchHoverID')
       " restore color
-      call matchdelete(g:w3m#MatchHoverID)
+      silent! call matchdelete(g:w3m#MatchHoverID)
       unlet g:w3m#MatchHoverID
     endif
     if tstart != -1 && tstart < tend

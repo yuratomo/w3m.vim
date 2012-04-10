@@ -657,6 +657,9 @@ function! s:default_highligh()
   if !hlexists('w3mAnchor')
     highlight! link w3mAnchor Label
   endif
+  if !hlexists('w3mLinkHover')
+    highlight! link w3mLinkHover SpecialKey
+  endif
   if !hlexists('w3mHitAHint')
     highlight! link w3mHitAHint Question
   endif
@@ -733,6 +736,64 @@ function! s:applySyntax()
   endfor
 
 endfunction
+
+" apply hover-links function
+if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on > 0
+  let g:w3m#set_hover_on = 1
+  if has("autocmd")
+    " everytime the cursor moves in the buffer 
+    " normal mode is forcesd by default, so only check normal mode
+    au! CursorMoved w3m-*  call s:applyHoverHighlight()
+  else
+    unlet g:w3m#set_hover_on
+  endif
+  function! s:applyHoverHighlight()
+    if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on < 1
+      " hover-links is turned OFF
+      return
+    endif
+    let [cl,cc] = [ line('.'), col('.') ]
+    let tstart = -1
+    let tend   = -1
+    let tidx = 0
+    let start_found = -1
+    for tag in b:tag_list
+      if tag.line > cl
+        " wrapping is not supported, so highlight to the end of the line
+        let tend = col('$')
+        break
+      endif
+      if tag.line == cl && tag.tagname ==? 'a' 
+        if tag.col > cc 
+          let start_found = 1
+        endif
+        if tag.type == s:TAG_START && start_found < 0
+          " This is a possible start
+          let tstart = tag.col - 1   
+          let tend   = tag.col - 1 
+          continue
+        endif
+        if tag.type == s:TAG_END && start_found < 0
+          let tstart = -1
+        endif
+        if tag.type == s:TAG_END && start_found > 0  
+          " We found the end
+          let tend = tag.col  
+          break
+        endif
+      endif
+      let tidx = tidx + 1
+    endfor
+    if exists('g:w3m#MatchHoverID')
+      " restore color
+      silent! call matchdelete(g:w3m#MatchHoverID)
+      unlet g:w3m#MatchHoverID
+    endif
+    if tstart != -1 && tstart < tend
+       let g:w3m#MatchHoverID = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cl.'l')
+    endif
+  endfunction
+endif
 
 function! s:escapeSyntax(str)
   return escape(a:str, '~"\|*-[]')

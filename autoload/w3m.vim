@@ -763,7 +763,7 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
       return
     endif
     let [cline,ccol] = [ line('.'), col('.') ]
-    if exists("b:matchHoverLine") && cline == b:matchHoverLine && ccol >= b:matchHoverColStart  && ccol < b:matchHoverColEnd
+    if exists("b:match_hover_line") && cline == b:match_hover_line && ccol >= b:match_hover_col_start  && ccol < b:match_hover_col_end
       " the link under the cursor has not changed
       return
     endif
@@ -786,19 +786,19 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
         break
       endif
     endfor
-    if exists('b:matchHoverID') 
+    if exists('b:match_hover_id') 
       " restore color
-      silent! call matchdelete(b:matchHoverID)
-      unlet b:matchHoverID
-      unlet b:matchHoverLine
-      unlet b:matchHoverColStart
-      unlet b:matchHoverColEnd
+      silent! call matchdelete(b:match_hover_id)
+      unlet b:match_hover_id
+      unlet b:match_hover_line
+      unlet b:match_hover_col_start
+      unlet b:match_hover_col_end
     endif
     if tstart != -1 && tstart < tend
-       let b:matchHoverID = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cline.'l')
-       let b:matchHoverLine = cline
-       let b:matchHoverColStart = tstart
-       let b:matchHoverColEnd = tend
+       let b:match_hover_id = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cline.'l')
+       let b:match_hover_line = cline
+       let b:match_hover_col_start = tstart
+       let b:match_hover_col_end = tend
     endif
   endfunction
 endif

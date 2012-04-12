@@ -763,7 +763,7 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
       return
     endif
     let [cline,ccol] = [ line('.'), col('.') ]
-    if exists("b:matchHoverLine") && cline == b:matchHoverLine && ccol >= b:matchHoverColStart && ccol <= b:matchHoverColEnd
+    if exists("b:matchHoverLine") && cline == b:matchHoverLine && ccol >= b:matchHoverColStart  && ccol < b:matchHoverColEnd
       " the link under the cursor has not changed
       return
     endif
@@ -777,7 +777,7 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
         let start_found = 1
         continue
       endif
-      if start_found > 0 && tag.col > ccol
+      if start_found > 0 && tag.col > ccol && tag.type == s:TAG_END
         let tend = tag.col
         break
       endif

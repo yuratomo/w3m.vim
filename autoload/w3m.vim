@@ -447,12 +447,15 @@ endfunction
 function! s:analizeOutputs(output_lines)
   let display_lines = []
   let b:tag_list = []
+  let b:link_index_list = []
   let b:form_list = []
 
   let cline = 1
+  let tnum  = 0
   for line in a:output_lines
     let analaized_line = ''
     let [lidx, ltidx, gtidx] = [ 0, -1, -1 ]
+    let line_list = []
     while 1
       let ltidx = stridx(line, '<', lidx)
       if ltidx >= 0
@@ -476,6 +479,11 @@ function! s:analizeOutputs(output_lines)
               \ 'echecked':0
               \ }
           call add(b:tag_list, item)
+          if tname == 'a'
+            " A link/anchor has been found
+            call add( line_list, tnum)
+          endif
+          let tnum += 1
           if stridx(tname,'input') == 0
             call add(b:form_list, item)
           endif
@@ -490,6 +498,7 @@ function! s:analizeOutputs(output_lines)
       endif
     endwhile
     call add(display_lines, analaized_line)
+    call add(b:link_index_list, line_list)
     let cline += 1
   endfor
   return display_lines
@@ -585,6 +594,7 @@ function! s:prepare_buffer()
     let b:history = []
     let b:display_lines = []
     let b:tag_list = []
+    let b:link_index_list = []
     let b:form_list = []
     let b:click_with_shift = 0
     let b:last_match_id = -1

@@ -758,49 +758,47 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
     unlet g:w3m#set_hover_on
   endif
   function! s:applyHoverHighlight()
-    if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on < 1
+    if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on < 1 
       " hover-links is turned OFF
       return
     endif
-    let [cl,cc] = [ line('.'), col('.') ]
+    let [cline,ccol] = [ line('.'), col('.') ]
+    if exists("b:matchHoverLine") && cline == b:matchHoverLine && ccol >= b:matchHoverColStart && ccol <= b:matchHoverColEnd
+      " the link under the cursor has not changed
+      return
+    endif
     let tstart = -1
     let tend   = -1
-    let tidx = 0
     let start_found = -1
-    for tag in b:tag_list
-      if tag.line > cl
-        " wrapping is not supported, so highlight to the end of the line
-        let tend = col('$')
+    for id in b:link_index_list[cline - 1]
+      let tag = b:tag_list[id]
+      if tag.col <= ccol && tag.type == s:TAG_START
+        let tstart = tag.col - 1
+        let start_found = 1
+        continue
+      endif
+      if start_found > 0 && tag.col > ccol
+        let tend = tag.col
         break
       endif
-      if tag.line == cl && tag.tagname ==? 'a' 
-        if tag.col > cc 
-          let start_found = 1
-        endif
-        if tag.type == s:TAG_START && start_found < 0
-          " This is a possible start
-          let tstart = tag.col - 1   
-          let tend   = tag.col - 1 
-          continue
-        endif
-        if tag.type == s:TAG_END && start_found < 0
-          let tstart = -1
-        endif
-        if tag.type == s:TAG_END && start_found > 0  
-          " We found the end
-          let tend = tag.col  
-          break
-        endif
+      if tag.col > ccol
+        " nothing here
+        break
       endif
-      let tidx = tidx + 1
     endfor
-    if exists('g:w3m#MatchHoverID')
+    if exists('b:matchHoverID') 
       " restore color
-      silent! call matchdelete(g:w3m#MatchHoverID)
-      unlet g:w3m#MatchHoverID
+      silent! call matchdelete(b:matchHoverID)
+      unlet b:matchHoverID
+      unlet b:matchHoverLine
+      unlet b:matchHoverColStart
+      unlet b:matchHoverColEnd
     endif
     if tstart != -1 && tstart < tend
-       let g:w3m#MatchHoverID = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cl.'l')
+       let b:matchHoverID = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cline.'l')
+       let b:matchHoverLine = cline
+       let b:matchHoverColStart = tstart
+       let b:matchHoverColEnd = tend
     endif
   endfunction
 endif

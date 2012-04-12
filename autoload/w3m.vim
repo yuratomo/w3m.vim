@@ -748,7 +748,7 @@ function! s:applySyntax()
 endfunction
 
 " apply hover-links function
-if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on > 0
+if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
   let g:w3m#set_hover_on = 1
   if has("autocmd")
     " everytime the cursor moves in the buffer 

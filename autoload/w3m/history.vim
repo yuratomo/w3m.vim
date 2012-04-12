@@ -3,7 +3,7 @@
 " Author: yuratomo (twitter @yusetomo)
 
 let g:w3m#history#list = []
-let g:w3m#history#save_file = $home.'\\.vim_w3m_hist'
+let g:w3m#history#save_file = $HOME.'/.vim_w3m_hist'
 let s:w3m_history_load = 0
 
 function! w3m#history#Regist(title, params)

@@ -447,12 +447,15 @@ endfunction
 function! s:analizeOutputs(output_lines)
   let display_lines = []
   let b:tag_list = []
+  let b:anchor_list = []
   let b:form_list = []
 
   let cline = 1
+  let tnum  = 0
   for line in a:output_lines
     let analaized_line = ''
     let [lidx, ltidx, gtidx] = [ 0, -1, -1 ]
+    let line_anchor_list = []
     while 1
       let ltidx = stridx(line, '<', lidx)
       if ltidx >= 0
@@ -476,6 +479,19 @@ function! s:analizeOutputs(output_lines)
               \ 'echecked':0
               \ }
           call add(b:tag_list, item)
+          if tname == 'a'
+            " Assume: All anchors start and stop on the same line
+            if type == s:TAG_START
+              " A link/anchor has been found
+              call add( line_anchor_list, {"startCol":ccol,"line":cline,"attr":attr})
+            else
+              let n = len(line_anchor_list) - 1
+              let line_anchor_list[n]["endCol"] = ccol
+              " echo "attr: ".attr
+              " sleep
+            end
+          endif
+          let tnum += 1
           if stridx(tname,'input') == 0
             call add(b:form_list, item)
           endif
@@ -490,6 +506,7 @@ function! s:analizeOutputs(output_lines)
       endif
     endwhile
     call add(display_lines, analaized_line)
+    call add(b:anchor_list, line_anchor_list)
     let cline += 1
   endfor
   return display_lines
@@ -585,6 +602,7 @@ function! s:prepare_buffer()
     let b:history = []
     let b:display_lines = []
     let b:tag_list = []
+    let b:anchor_list = []
     let b:form_list = []
     let b:click_with_shift = 0
     let b:last_match_id = -1
@@ -748,49 +766,38 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
     unlet g:w3m#set_hover_on
   endif
   function! s:applyHoverHighlight()
-    if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on < 1
+    if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on < 1 
       " hover-links is turned OFF
       return
     endif
-    let [cl,cc] = [ line('.'), col('.') ]
-    let tstart = -1
-    let tend   = -1
-    let tidx = 0
-    let start_found = -1
-    for tag in b:tag_list
-      if tag.line > cl
-        " wrapping is not supported, so highlight to the end of the line
-        let tend = col('$')
+    let [cline,ccol] = [ line('.'), col('.') ]
+    if exists("b:match_hover_anchor") && b:match_hover_anchor.line == cline && b:match_hover_anchor.startCol <=  ccol && b:match_hover_anchor.endCol > ccol
+      " the link under the cursor has not changed
+      return
+    endif
+    " loop through all anchors on this line
+    for anchor in b:anchor_list[cline - 1]
+      if anchor.startCol <= ccol && anchor.endCol > ccol
+        " a match is found
+        let a_found = anchor
         break
       endif
-      if tag.line == cl && tag.tagname ==? 'a' 
-        if tag.col > cc 
-          let start_found = 1
-        endif
-        if tag.type == s:TAG_START && start_found < 0
-          " This is a possible start
-          let tstart = tag.col - 1   
-          let tend   = tag.col - 1 
-          continue
-        endif
-        if tag.type == s:TAG_END && start_found < 0
-          let tstart = -1
-        endif
-        if tag.type == s:TAG_END && start_found > 0  
-          " We found the end
-          let tend = tag.col  
-          break
-        endif
+      if anchor.startCol > ccol
+        " we've gone to far
+        break
       endif
-      let tidx = tidx + 1
     endfor
-    if exists('g:w3m#MatchHoverID')
+    if exists('b:match_hover_id') 
       " restore color
-      silent! call matchdelete(g:w3m#MatchHoverID)
-      unlet g:w3m#MatchHoverID
+      silent! call matchdelete(b:match_hover_id)
+      unlet b:match_hover_id
+      unlet b:match_hover_anchor
     endif
-    if tstart != -1 && tstart < tend
-       let g:w3m#MatchHoverID = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cl.'l')
+    if exists('a_found')
+      let b:match_hover_anchor = a_found
+      let tstart = b:match_hover_anchor.startCol - 1
+      let tend   = b:match_hover_anchor.endCol
+      let b:match_hover_id = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cline.'l')
     endif
   endfunction
 endif

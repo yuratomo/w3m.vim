@@ -18,7 +18,7 @@ endfunction
 
 function! s:engine.filter(outputs)
   let new_outputs = []
-  for output in a:outputs[12:-20]
+  for output in a:outputs[11:-18]
     let msdn_url = match(output, '\/url?q=http:\/\/tools\.ietf\.org\/')
     if msdn_url != -1
       let output = substitute(output, '\/url?q=', '', 'g')

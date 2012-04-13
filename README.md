@@ -80,7 +80,7 @@ Usage
 Settings
 --------
 
-###Hilight:###
+###Highlight:###
     highlight! link w3mLink      Function
     highlight! link w3mLinkHover SpecialKey
     highlight! link w3mSubmit    Special
@@ -123,6 +123,10 @@ By default links under the curosr are highlighted. Turn off with one of the foll
     let g:w3m#hover_set_on = -1 
     " a value less than or equal to 0 will turn it off
 
+    " set delay time until highlighting
+    let g:w3m#hover_delay_time = 100
+
+
 Default Keymaps
 ---------------
 * &lt;CR&gt;      Open link under the cursor.
@@ -153,6 +157,11 @@ ScreenShots
 HISTORY
 -------
 
+### v1.1.0 by yuratomo
+* Hover links highlighting. (__thanks dat5h__)
+* Fixed default history file (__thanks nise-nabe__)
+* Fixed search_engine/rfc.vim
+
 ### v1.0.0 by yuratomo
 * Add :W3mHistory
 * Add :W3mHistoryClear
@@ -178,7 +187,7 @@ HISTORY
 
 ### v0.8.0 by yuratomo
 * Anchor Correspondence
-* add Anchor-Hilight (w3mAnchor)
+* add Anchor-Highlight (w3mAnchor)
 
 ### v0.7.0 by yuratomo ###
 * Search by specifying search engine (#4)

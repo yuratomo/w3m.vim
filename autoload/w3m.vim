@@ -759,12 +759,23 @@ endfunction
 if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
   let g:w3m#set_hover_on = 1
   if has("autocmd")
-    " everytime the cursor moves in the buffer 
-    " normal mode is forcesd by default, so only check normal mode
-    au! CursorMoved w3m-*  call s:applyHoverHighlight()
+    if g:w3m#hover_delay_time == 0
+      " everytime the cursor moves in the buffer 
+      " normal mode is forcesd by default, so only check normal mode
+      au! CursorMoved w3m-*  call s:applyHoverHighlight()
+    else
+      au! CursorMoved w3m-*  call s:delayHoverHighlight()
+    endif
   else
     unlet g:w3m#set_hover_on
   endif
+  function! s:delayHoverHighlight()
+    if !exists('g:w3m#updatetime_backup')
+      let g:w3m#updatetime_backup = &updatetime
+      let &updatetime = g:w3m#hover_delay_time
+      au! CursorHold w3m-*  call s:applyHoverHighlight()
+    endif
+  endfunction
   function! s:applyHoverHighlight()
     if !exists('g:w3m#set_hover_on') || g:w3m#set_hover_on < 1 
       " hover-links is turned OFF
@@ -798,6 +809,11 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
       let tstart = b:match_hover_anchor.startCol - 1
       let tend   = b:match_hover_anchor.endCol
       let b:match_hover_id = matchadd('w3mLinkHover', '\%>'.tstart.'c\%<'.tend.'c\%'.cline.'l')
+    endif
+    if exists('g:w3m#updatetime_backup')
+      let &updatetime = g:w3m#updatetime_backup
+      au! CursorHold w3m-*
+      unlet g:w3m#updatetime_backup
     endif
   endfunction
 endif

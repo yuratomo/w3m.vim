@@ -157,6 +157,9 @@ ScreenShots
 HISTORY
 -------
 
+### v1.1.1 by yuratomo
+* Fix errors that occur during hover hilighting.
+
 ### v1.1.0 by yuratomo
 * Hover links highlighting. (__thanks dat5h__)
 * Fixed default history file (__thanks nise-nabe__)

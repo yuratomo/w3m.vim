@@ -483,7 +483,7 @@ function! s:analizeOutputs(output_lines)
             " Assume: All anchors start and stop on the same line
             if type == s:TAG_START
               " A link/anchor has been found
-              call add( line_anchor_list, {"startCol":ccol,"line":cline,"attr":attr})
+              call add( line_anchor_list, {"startCol":ccol,"endCol":ccol,"line":cline,"attr":attr})
             else
               let n = len(line_anchor_list) - 1
               let line_anchor_list[n]["endCol"] = ccol
@@ -784,6 +784,9 @@ if exists('g:w3m#set_hover_on') && g:w3m#set_hover_on > 0
     let [cline,ccol] = [ line('.'), col('.') ]
     if exists("b:match_hover_anchor") && b:match_hover_anchor.line == cline && b:match_hover_anchor.startCol <=  ccol && b:match_hover_anchor.endCol > ccol
       " the link under the cursor has not changed
+      return
+    endif
+    if cline >= len(b:anchor_list)
       return
     endif
     " loop through all anchors on this line

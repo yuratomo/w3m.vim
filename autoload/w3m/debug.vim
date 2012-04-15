@@ -37,7 +37,7 @@ function! w3m#debug#dump()
   endfor
   call setline(didx, '--------- global history --------')
   let didx += 1
-  for hist in g:w3m#history
+  for hist in b:history
     call setline(didx, string(hist))
     let didx += 1
   endfor

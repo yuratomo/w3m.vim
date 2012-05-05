@@ -1,6 +1,6 @@
 " File: plugin/w3m.vim
-" Last Modified: 2012.04.04
-" Version: 1.0.0
+" Last Modified: 2012.05.05
+" Version: 1.2.0
 " Author: yuratomo (twitter @yusetomo)
 
 if exists('g:loaded_w3m') && g:loaded_w3m == 1
@@ -96,6 +96,7 @@ endif
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(g:w3m#OPEN_NORMAL, <f-args>)
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3mTab :call w3m#Open(g:w3m#OPEN_TAB, <f-args>)
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3mSplit :call w3m#Open(g:w3m#OPEN_SPLIT, <f-args>)
+command! -nargs=* -complete=file W3mLocal :call w3m#Open(g:w3m#OPEN_NORMAL, 'local', <f-args>)
 command! -nargs=0 W3mHistory :call w3m#history#Show()
 command! -nargs=0 W3mHistoryClear :call w3m#history#Clear()
 

@@ -38,12 +38,16 @@ Usage
     wikipedia        : wikipedia (http://ja.wikipedia.org/wiki/)
     yahoo            : yahoo (http://search.yahoo.co.jp/search)
     yahoodict        : yahoo dictionary (http://dic.search.yahoo.co.jp/)
+    local            : local html file
 
 ###Open URL At New Tab:###
     input :W3mTab [url or keyword]
 
 ###Open URL At Split Window:###
     input :W3mSplit [url or keyword]
+
+###Open Local Html File###
+    input :W3m local html-file-path
 
 ###Close:###
     input :W3mClose
@@ -156,6 +160,8 @@ ScreenShots
 
 HISTORY
 -------
+### v1.2.0 by yuratomo
+* Add search-engine for local html file.
 
 ### v1.1.1 by yuratomo
 * Fix errors that occur during hover hilighting.

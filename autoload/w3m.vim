@@ -238,6 +238,10 @@ function! w3m#Open(mode, ...)
   for se in g:w3m#search_engine_list
     if has_key(se, 'name') && has_key(se, 'url')
       if se.name == a:000[0]
+        "preproc for search-engine
+        if has_key(se, 'preproc')
+          call se.preproc()
+        endif
         let url = printf(se.url, join(a:000[1:], ' '))
         let use_filter = 1
         break
@@ -256,6 +260,10 @@ function! w3m#Open(mode, ...)
     for se in g:w3m#page_filter_list
       if has_key(se, 'pattern')
         if match(url, se.pattern) != -1
+          "preproc for page-filter
+          if has_key(se, 'preproc')
+            call se.preproc()
+          endif
           let use_filter = 1
           break
         endif
@@ -269,13 +277,6 @@ function! w3m#Open(mode, ...)
   if aidx >= 0
     let anchor = url[ aidx : ]
     let url = url[0 : aidx - 1 ]
-  endif
-
-  "preproc for filter
-  if use_filter == 1
-    if has_key(se, 'preproc')
-      call se.preproc()
-    endif
   endif
 
   "create command

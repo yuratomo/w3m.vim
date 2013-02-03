@@ -3,7 +3,7 @@
 " Version: 
 " Author: 
 
-let s:engine = w3m#InitSearchEngine('xxx', 'search-engine-url with %s')
+let s:engine = w3m#search_engine#Init('xxx', 'search-engine-url with %s')
 
 function! s:engine.preproc()
   "for example. Change user-agent.
@@ -22,4 +22,4 @@ function! s:engine.filter(outputs)
   return a:outputs[1:-1]
 endfunctio
 
-call w3m#AddSearchEngin(s:engine)
+call w3m#search_engine#Add(s:engine)

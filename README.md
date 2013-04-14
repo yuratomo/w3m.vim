@@ -112,7 +112,7 @@ Settings
     let g:w3m#search_engine = 
         \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
 
-###Disable Defualt Keymap:###
+###Disable Default Keymap:###
 You set as follows if you do not want to use default keymap.
 
     let g:w3m#disable_default_keymap = 1

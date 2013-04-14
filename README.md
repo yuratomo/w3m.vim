@@ -7,10 +7,12 @@ w3m.vim is a plugin on vim for w3m that is a console web browser.
 
 Requirements
 ------------
-w3m.vim is requires w3m. please install it.
-And through the path to the w3m.exe or define vimrc as follows.
+w3m.vim requires [w3m](http://w3m.sourceforge.net/) to be installed.
 
-    let g:w3m#command = 'C:\hoge\w3m.exe'
+If w3m is not in your $PATH, you can specify its location in
+your vimrc file.
+
+    let g:w3m#command = 'C:\w3m.exe'
 
 Usage
 -----
@@ -22,23 +24,23 @@ Usage
     input :W3m search-engine-name keyword
 
     [search-engine-name]
-    alc              : space alc (http://eow.alc.co.jp)
-    android          : android SDK (http://www.androidjavadoc.com)
-    as3              : action script 3.0 (http://livedocs.adobe.com/flash/9.0_jp/)
-    go               : go language (http://golang.jp/)
-    google           : google (http://www.google.co.jp/)
-    java             : JDK6 (http://java.sun.com/javase/ja/6/docs/ja/api)
-    man              : man (http://linuxjm.sourceforge.jp/html/)
-    msdn             : MSDN (http://msdn.microsoft.com/ja-jp/library/)
-    perl             : PERL (http://perldoc.jp/func/)
-    php              : PHP (http://php.net/manual/ja)
-    python           : Python (http://www.python.jp/doc/)
-    rfc              : RFC (http://tools.ietf.org/html)
-    ruby             : ruby (http://doc.ruby-lang.org/ja/1.9.3/function/)
-    wikipedia        : wikipedia (http://ja.wikipedia.org/wiki/)
-    yahoo            : yahoo (http://search.yahoo.co.jp/search)
-    yahoodict        : yahoo dictionary (http://dic.search.yahoo.co.jp/)
-    local            : local html file
+    alc              : space alc
+    android          : Android SDK
+    as3              : ActionScript 3.0
+    go               : Go language
+    google           : Google
+    java             : JDK6
+    man              : man
+    msdn             : MSDN
+    perl             : PERL
+    php              : PHP
+    python           : Python
+    rfc              : RFC
+    ruby             : Ruby
+    wikipedia        : Wikipedia
+    yahoo            : Yahoo
+    yahoodict        : Yahoo dictionary
+    local            : Local HTML file
 
 ###Open URL At New Tab:###
     input :W3mTab [url or keyword]
@@ -110,7 +112,7 @@ Settings
     let g:w3m#search_engine = 
         \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
 
-###Disable Defualt Keymap:###
+###Disable Default Keymap:###
 You set as follows if you do not want to use default keymap.
 
     let g:w3m#disable_default_keymap = 1
@@ -130,6 +132,13 @@ By default links under the curosr are highlighted. Turn off with one of the foll
     " set delay time until highlighting
     let g:w3m#hover_delay_time = 100
 
+###Search Engine Localization:###
+Search engines are loaded from `autoload/w3m/search_engines/YOUR_LOCALE/`, and then from the "global" locale
+unless a localized search engine of the same name exists. Your locale defaults to `v:lang`, which vim sets
+based on your `$LANG` environment variable.
+
+To specify a custom locale for loading search engines:
+    let g:w3m#lang = 'en_US'
 
 Default Keymaps
 ---------------

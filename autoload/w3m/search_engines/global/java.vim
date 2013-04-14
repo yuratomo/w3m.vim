@@ -3,7 +3,7 @@
 " Version: 1.0.0
 " Author: yuratomo (twitter @yusetomo)
 
-let s:engine = w3m#search_engine#Init('jdk', 'http://www.google.com/search?sitesearch=java.sun.com/javase/ja/6/docs/ja/api&q=%s')
+let s:engine = w3m#search_engine#Init('jdk', 'http://www.google.com/search?sitesearch=java.sun.com/javase/ja/6/docs/en/api&q=%s')
 
 function! s:engine.preproc()
   let s:user_agent_backup = g:user_agent

@@ -3,7 +3,7 @@
 " Version: 1.0.0
 " Author: yuratomo (twitter @yusetomo)
 
-let s:engine = w3m#search_engine#Init('flex', 'http://www.google.com/search?sitesearch=help.adobe.com/ja_JP/FlashPlatform/reference/actionscript/3/&q=%s')
+let s:engine = w3m#search_engine#Init('flex', 'http://www.google.com/search?sitesearch=help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/&q=%s')
 
 function! s:engine.preproc()
   let s:user_agent_backup = g:user_agent

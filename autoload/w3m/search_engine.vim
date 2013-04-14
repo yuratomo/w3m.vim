@@ -8,9 +8,17 @@ function! w3m#search_engine#Load()
   if s:loaded_search_engines == 1
     return
   endif
-  for file in split(globpath(&runtimepath, 'autoload/w3m/search_engines/*.vim'), '\n')
+
+  " Load search engines with active locale (set g:w3m#lang or $LANG)
+  for file in split(globpath(&runtimepath, 'autoload/w3m/search_engines/' . split(v:lang, '\.')[0] . '/*.vim'), '\n')
     exe 'so ' . file
   endfor
+
+  " Load search engines with 'global' locale
+  for file in split(globpath(&runtimepath, 'autoload/w3m/search_engines/global/*.vim'), '\n')
+    exe 'so ' . file
+  endfor
+
   let s:loaded_search_engines = 1
 endfunction
 
@@ -34,7 +42,19 @@ function! w3m#search_engine#Init(name, url)
 endfunction
 
 function! w3m#search_engine#Add(engine)
-  call add(g:w3m#search_engine_list, a:engine)
+  let skip = 0
+
+  " skip if already loaded from another locale
+  for item in g:w3m#search_engine_list
+    if item.name == a:engine.name
+      let skip = 1
+    endif
+  endfor
+
+  if !skip
+    call add(g:w3m#search_engine_list, a:engine)
+  endif
+
 endfunction
 
 function! w3m#search_engine#GoogleSiteFilter(outputs)
@@ -50,4 +70,3 @@ function! w3m#search_engine#GoogleSiteFilter(outputs)
   endfor
   return new_outputs
 endfunction
-

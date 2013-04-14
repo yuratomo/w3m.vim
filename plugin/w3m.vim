@@ -25,8 +25,7 @@ if !exists('g:w3m#download_ext')
   let g:w3m#download_ext = [ 'zip', 'lzh', 'cab', 'tar', 'gz', 'z', 'exe' ]
 endif
 if !exists('g:w3m#search_engine')
-  let g:w3m#search_engine = 
-    \ 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p='
+  let g:w3m#search_engine = 'http://www.google.com/search?ie=' . &encoding . '&q=%s'
 endif
 if !exists('g:w3m#max_history_num')
   let g:w3m#max_history_num = 30
@@ -72,6 +71,9 @@ if !exists('g:w3m#set_hover_on')
 endif
 if !exists('g:w3m#hover_delay_time')
   let g:w3m#hover_delay_time = 100
+endif
+if !exists('g:w3m#lang')
+  let g:w3m#lang = v:lang
 endif
 
 call add(g:w3m#user_agent_list, {'name':'w3m',     'agent':''})

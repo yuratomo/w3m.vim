@@ -10,7 +10,7 @@ function! w3m#search_engine#Load()
   endif
 
   " Load search engines with active locale (set g:w3m#lang or $LANG)
-  for file in split(globpath(&runtimepath, 'autoload/w3m/search_engines/' . split(v:lang, '\.')[0] . '/*.vim'), '\n')
+  for file in split(globpath(&runtimepath, 'autoload/w3m/search_engines/' . split(g:w3m#lang, '\.')[0] . '/*.vim'), '\n')
     exe 'so ' . file
   endfor
 

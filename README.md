@@ -130,6 +130,13 @@ By default links under the curosr are highlighted. Turn off with one of the foll
     " set delay time until highlighting
     let g:w3m#hover_delay_time = 100
 
+###Search Engine Localization:###
+Search engines are loaded from `autoload/w3m/search_engines/YOUR_LOCALE/`, and then from the "global" locale
+unless a localized search engine of the same name exists. Your locale defaults to `v:lang`, which vim sets
+based on your `$LANG` environment variable.
+
+To specify a custom locale for loading search engines:
+    let g:w3m#lang = 'en_US'
 
 Default Keymaps
 ---------------

@@ -9,6 +9,7 @@ command! -buffer -nargs=* W3mAddressBar :call w3m#EditAddress()
 command! -buffer -nargs=* W3mShowTitle :call w3m#ShowTitle()
 command! -buffer -nargs=* W3mShowExtenalBrowser :call w3m#ShowExternalBrowser()
 command! -buffer -nargs=* W3mShowSource :call w3m#ShowSourceAndHeader()
+command! -buffer -nargs=* W3mShowDump :call w3m#ShowDump()
 command! -buffer -nargs=* W3mClose :bd
 command! -buffer -nargs=* W3mSyntaxOff :call w3m#ChangeSyntaxOnOff(0)
 command! -buffer -nargs=* W3mSyntaxOn :call w3m#ChangeSyntaxOnOff(1)

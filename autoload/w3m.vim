@@ -98,6 +98,14 @@ function! w3m#ShowSourceAndHeader()
   endif
 endfunction
 
+function! w3m#ShowDump()
+  if exists('b:last_url')
+    let cmdline = join( [ g:w3m#command, s:tmp_option, g:w3m#option, '"' . b:last_url . '"' ], ' ')
+    new
+    call setline(1, split(s:system(cmdline), '\n'))
+  endif
+endfunction
+
 function! w3m#ShowExternalBrowser()
   if exists('g:w3m#external_browser') && exists('b:last_url')
     call s:system(g:w3m#external_browser . ' "' . b:last_url . '"')
@@ -253,7 +261,7 @@ function! w3m#Open(mode, ...)
     if s:isHttpURL(a:000[0])
       let url = s:normalizeUrl(a:000[0])
     else
-      let url = g:w3m#search_engine . join(a:000, ' ')
+      let url = printf(g:w3m#search_engine, join(a:000, ' '))
     endif
 
     "Is the url match page-filter pattern?
@@ -289,6 +297,19 @@ function! w3m#Open(mode, ...)
     if has_key(se, 'postproc')
       call se.postproc()
     endif
+  endif
+
+  "get charset from header
+  let b:charset = &encoding
+  let header = split(s:system(substitute(cmdline, "-halfdump", "-dump_head", "")), '\n')
+  let header_charset = filter(header, 'v:val =~ "charset="')
+  if len(header_charset) > 0
+    for item in split(header_charset[0], ' ')
+      let keys = split(item, '=')
+      if len(keys) > 1
+        let b:charset = keys[1]
+      endif
+    endfor
   endif
 
   "execute halfdump
@@ -1208,10 +1229,10 @@ function! w3m#HitAHintEnd()
 endfunction
 
 function! s:encodeUrl(str)
-  if &encoding == 'utf-8'
+  if &encoding ==? b:charset
     let utf8str = a:str
   else
-    let utf8str = iconv(a:str, &encoding, 'utf-8')
+    let utf8str = iconv(a:str, &encoding, b:charset)
   endif
   let retval = substitute(utf8str,  '[^- *.0-9A-Za-z]', '\=s:ch2hex(submatch(0))', 'g')
   let retval = substitute(retval, ' ', '%20', 'g')

@@ -230,6 +230,8 @@ function! w3m#Open(mode, ...)
     tabe
   elseif a:mode == g:w3m#OPEN_SPLIT
     new
+  elseif a:mode == g:w3m#OPEN_VSPLIT && has('vertsplit')
+    vnew
   endif
 
   call s:prepare_buffer()
@@ -405,7 +407,7 @@ function! w3m#NextLink()
   endif
 endfunction
 
-function! w3m#Click(shift)
+function! w3m#Click(shift, ctrl)
   let [cl,cc] = [ line('.'), col('.') ]
   let tstart = -1
   let tidx = 0
@@ -432,6 +434,7 @@ function! w3m#Click(shift)
       continue
     endif
     let b:click_with_shift = a:shift
+    let b:click_with_ctrl = a:ctrl
     let ret = s:dispatchTagProc(b:tag_list[tidx].tagname, tidx)
     if ret == 1
       break
@@ -627,6 +630,7 @@ function! s:prepare_buffer()
     let b:anchor_list = []
     let b:form_list = []
     let b:click_with_shift = 0
+    let b:click_with_ctrl = 0
     let b:last_match_id = -1
     let b:enable_syntax = 1
 
@@ -641,8 +645,9 @@ function! s:prepare_buffer()
 endfunction
 
 function! s:keymap()
-  nnoremap <buffer><Plug>(w3m-click)         :<C-u>call w3m#Click(0)<CR>
-  nnoremap <buffer><Plug>(w3m-shift-click)   :<C-u>call w3m#Click(1)<CR>
+  nnoremap <buffer><Plug>(w3m-click)         :<C-u>call w3m#Click(0, 0)<CR>
+  nnoremap <buffer><Plug>(w3m-shift-click)   :<C-u>call w3m#Click(1, 0)<CR>
+  nnoremap <buffer><Plug>(w3m-shift-ctrl-click)  :<C-u>call w3m#Click(1, 1)<CR>
   nnoremap <buffer><Plug>(w3m-address-bar)   :<C-u>call w3m#EditAddress()<CR>
   nnoremap <buffer><Plug>(w3m-next-link)     :<C-u>call w3m#NextLink()<CR>
   nnoremap <buffer><Plug>(w3m-prev-link)     :<C-u>call w3m#PrevLink()<CR>
@@ -662,6 +667,7 @@ function! s:keymap()
     nmap <buffer><LeftMouse> <LeftMouse><Plug>(w3m-click)
     nmap <buffer><CR>        <Plug>(w3m-click)
     nmap <buffer><S-CR>      <Plug>(w3m-shift-click)
+    nmap <buffer><C-S-CR>    <Plug>(w3m-shift-ctrl-click)
     nmap <buffer><TAB>       <Plug>(w3m-next-link)
     nmap <buffer><S-TAB>     <Plug>(w3m-prev-link)
     nmap <buffer><BS>        <Plug>(w3m-back)
@@ -866,8 +872,12 @@ function! s:tag_a(tidx)
       call s:moveToAnchor(url)
     else
       let open_mode = g:w3m#OPEN_NORMAL
-      if b:click_with_shift == 1
+      let s_orientation = b:click_with_shift + b:click_with_ctrl
+      if s_orientation == 1
         let open_mode = g:w3m#OPEN_SPLIT
+      endif
+      if s_orientation == 2
+        let open_mode = g:w3m#OPEN_VSPLIT
       endif
       call w3m#Open(open_mode, url)
     endif

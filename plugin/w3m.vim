@@ -10,7 +10,7 @@ endif
 let s:save_cpo = &cpo
 set cpo&vim
 
-let [g:w3m#OPEN_NORMAL,g:w3m#OPEN_SPLIT,g:w3m#OPEN_TAB] = range(3)
+let [g:w3m#OPEN_NORMAL,g:w3m#OPEN_SPLIT,g:w3m#OPEN_TAB,g:w3m#OPEN_VSPLIT] = range(4)
 
 if !exists('g:w3m#command')
   let g:w3m#command = 'w3m'
@@ -102,6 +102,7 @@ endif
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3m :call w3m#Open(g:w3m#OPEN_NORMAL, <f-args>)
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3mTab :call w3m#Open(g:w3m#OPEN_TAB, <f-args>)
 command! -nargs=* -complete=customlist,w3m#search_engine#List W3mSplit :call w3m#Open(g:w3m#OPEN_SPLIT, <f-args>)
+command! -nargs=* -complete=customlist,w3m#search_engine#List W3mVSplit :call w3m#Open(g:w3m#OPEN_VSPLIT, <f-args>)
 command! -nargs=* -complete=file W3mLocal :call w3m#Open(g:w3m#OPEN_NORMAL, 'local', <f-args>)
 command! -nargs=0 W3mHistory :call w3m#history#Show()
 command! -nargs=0 W3mHistoryClear :call w3m#history#Clear()

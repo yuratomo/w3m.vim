@@ -48,6 +48,9 @@ Usage
 ###Open URL At Split Window:###
     input :W3mSplit [url or keyword]
 
+###Open URL At Vertical Split Window:###
+    input :W3mVSplit [url or keyword]
+
 ###Open Local Html File###
     input :W3m local html-file-path
 

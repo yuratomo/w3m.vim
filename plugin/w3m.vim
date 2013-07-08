@@ -28,7 +28,7 @@ if !exists('g:w3m#lang')
   let g:w3m#lang = v:lang
 endif
 if !exists('g:w3m#search_engine')
-  if g:w3m#lang == 'ja_JP'
+  if g:w3m#lang == 'ja_JP' || g:w3m#lang == 'ja'
     let g:w3m#search_engine = 'http://search.yahoo.co.jp/search?search.x=1&fr=top_ga1_sa_124&tid=top_ga1_sa_124&ei=' . &encoding . '&aq=&oq=&p=%s'
   else
     let g:w3m#search_engine = 'http://www.google.com/search?ie=' . &encoding . '&q=%s'

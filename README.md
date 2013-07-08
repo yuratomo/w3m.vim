@@ -48,6 +48,9 @@ Usage
 ###Open URL At Split Window:###
     input :W3mSplit [url or keyword]
 
+###Open URL At Vertical Split Window:###
+    input :W3mVSplit [url or keyword]
+
 ###Open Local Html File###
     input :W3m local html-file-path
 
@@ -138,7 +141,11 @@ unless a localized search engine of the same name exists. Your locale defaults t
 based on your `$LANG` environment variable.
 
 To specify a custom locale for loading search engines:
+
     let g:w3m#lang = 'en_US'
+
+###Specify path to history file:###
+    let g:w3m#history#save_file = $HOME.'/.vim_w3m_hist'
 
 Default Keymaps
 ---------------
@@ -169,6 +176,9 @@ ScreenShots
 
 HISTORY
 -------
+### v1.3.0 by yuratomo
+* Support select element.
+
 ### v1.2.0 by yuratomo
 * Add search-engine for local html file.
 

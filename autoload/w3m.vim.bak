@@ -1036,52 +1036,8 @@ function! s:tag_input_reset(tidx)
   call s:message('reset form data')
 endfunction
 
-function! s:select_options(selectnumber)
-  let options = []
-  let stage = 0
-  for tag in b:tag_list
-    if stage == 0 && tag.type == s:TAG_START && tag.tagname ==? 'select_int' && has_key(tag.attr, 'selectnumber') && tag.attr.selectnumber == a:selectnumber
-      let stage = 1
-    elseif stage == 1 && tag.type == s:TAG_START && tag.tagname ==? 'option_int'
-      call add(options, tag.attr)
-    elseif stage == 1 && tag.tagname ==? 'select_int'
-      break
-    elseif stage == 1 && tag.type == s:TAG_START && tag.tagname ==? 'select_int'
-      break
-    endif
-  endfor
-  return options
-endfunction
-
-fun w3m#select_option_list(A,L,P)
-  let items = []
-  for attr in b:options
-    if attr.label =~ '^'.a:A
-      call add(items, attr.label)
-    endif
-  endfor
-  return items
-endfun
-
-function! s:tag_input_select(tidx)
-  let b:options = s:select_options(b:tag_list[a:tidx].attr.selectnumber)
-  redraw
-  let wmde = &wildmode
-  let &wildmode = "full"
-  let label = input("select option:", "", "customlist,w3m#select_option_list")
-  let &wildmode = wmde
-  for attr in b:options
-    if attr.label == label
-      let b:tag_list[a:tidx].evalue = attr.value
-      let b:tag_list[a:tidx].elabel = attr.label
-      let b:tag_list[a:tidx].edited = 1
-      break
-    endif
-  endfor
-  call s:applyEditedInputValues()
-endfunction
-
-" ---
+"function! s:tag_input_xxx(tidx)
+"endfunction
 
 function! s:create_command(url, cols)
   let command_list = [ g:w3m#command, s:tmp_option, g:w3m#option, '-cols', a:cols]
@@ -1152,16 +1108,6 @@ function! w3m#buildQueryString(fid, tidx, is_encode)
               continue
             endif
           endif
-        elseif item.attr.type == 'select'
-          if item.edited == 0
-            let options = s:select_options(item.attr.selectnumber)
-            for option in options
-              if has_key(option, 'selected')
-                let item.attr.value = option.value
-                break
-              endif
-            endfor
-          endif
         endif
       endif
 
@@ -1204,24 +1150,10 @@ function! s:applyEditedInputValues()
         if has_key(item.attr,'value')
           let value = item.attr.value
         else
-          if item.attr.type == 'select'
-            let options = s:select_options(item.attr.selectnumber)
-            for option in options
-              if has_key(option, 'selected')
-                let value = option.label
-                break
-              endif
-            endfor
-          else
-            let value = ''
-          endif
+          let value = ''
         endif
       else
-        if has_key(item,'elabel')
-          let value = item.elabel
-        else
-          let value = item.evalue
-        endif
+        let value = item.evalue
       endif
       let line = getline(item.line)
       let s = stridx(line, '[')
@@ -1453,7 +1385,7 @@ endfunction
 
 function! s:is_editable_tag(tag)
   if has_key(a:tag.attr,'name') && has_key(a:tag.attr,'type') && a:tag.tagname ==? 'input_alt'
-    if a:tag.attr.type ==? 'text' || a:tag.attr.type ==? 'textarea' || a:tag.attr.type ==? 'select'
+    if a:tag.attr.type ==? 'text' || a:tag.attr.type ==? 'textarea'
       return 1
     endif
   endif

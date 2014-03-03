@@ -141,7 +141,11 @@ unless a localized search engine of the same name exists. Your locale defaults t
 based on your `$LANG` environment variable.
 
 To specify a custom locale for loading search engines:
+
     let g:w3m#lang = 'en_US'
+
+###Specify path to history file:###
+    let g:w3m#history#save_file = $HOME.'/.vim_w3m_hist'
 
 Default Keymaps
 ---------------

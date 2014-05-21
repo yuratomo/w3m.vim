@@ -511,9 +511,14 @@ function! s:analizeOutputs(output_lines)
               call add( line_anchor_list, {"startCol":ccol,"endCol":ccol,"line":cline,"attr":attr})
             else
               let n = len(line_anchor_list) - 1
-              let line_anchor_list[n]["endCol"] = ccol
+              "let line_anchor_list[n]["endCol"] = ccol
               " echo "attr: ".attr
               " sleep
+              let line_anchor_item = get(line_anchor_list, n, 0)
+              if type(line_anchor_item) == 4
+                let line_anchor_item["endCol"] = ccol
+              endif
+              unlet line_anchor_item
             end
           endif
           let tnum += 1
@@ -1309,6 +1314,8 @@ function! s:decordeEntRef(str)
   let str = substitute(str, '&cent;',   'Åë','g')
   let str = substitute(str, '&copy;',   'c', 'g')
   let str = substitute(str, '&middot;', 'ÅE','g')
+  let str = substitute(str, '&mdash;',  'Å\','g')
+  let str = substitute(str, '&ndash;',  'Å\','g')
   let str = substitute(str, '&apos;',   "'", 'g')
   return    substitute(str, '&nbsp;',   ' ', 'g')
 endfunction

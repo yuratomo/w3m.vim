@@ -1015,7 +1015,6 @@ function! s:tag_input_checkbox(tidx)
       let b:tag_list[a:tidx].echecked = 1
     endif
   endif
-  let b:tag_list[a:tidx].echecked = 1
   if has_key(b:tag_list[a:tidx].attr, 'value')
     let value = b:tag_list[a:tidx].attr.value
   else

@@ -301,17 +301,16 @@ function! w3m#Open(mode, ...)
     endif
   endif
 
-  "get charset from header
+  "resolve charset from header and body(META)
   let b:charset = &encoding
   let header = split(s:system(substitute(cmdline, "-halfdump", "-dump_head", "")), '\n')
-  let header_charset = filter(header, 'v:val =~ "charset="')
-  if len(header_charset) > 0
-    for item in split(header_charset[0], ' ')
-      let keys = split(item, '=')
-      if len(keys) > 1
-        let b:charset = keys[1]
-      endif
-    endfor
+  if s:resolveCharset(header) == 0
+    let body = split(s:system(substitute(cmdline, "-halfdump", "-dump_source", "")), '\n')
+    let max_analize_line = 20
+    if len(body) < max_analize_line
+      let max_analize_line = len(body) - 1
+    endif
+    call s:resolveCharset(body[0 : max_analize_line])
   endif
 
   "execute halfdump
@@ -345,6 +344,16 @@ function! w3m#Open(mode, ...)
   if anchor != ''
     call s:moveToAnchor(anchor)
   endif
+endfunction
+
+function! s:resolveCharset(header)
+  let ret = 0
+  let header_charset = filter(a:header, 'v:val =~ "charset="')
+  if len(header_charset) > 0
+    let b:charset = substitute(substitute(header_charset[0], '^.*\<charset=', '', ''), '[">].*$', '', '')
+    let ret = 1
+  endif
+  return ret
 endfunction
 
 function! w3m#Back()

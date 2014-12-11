@@ -893,7 +893,12 @@ function! s:tag_a(tidx)
       if s_orientation == 2
         let open_mode = g:w3m#OPEN_VSPLIT
       endif
-      call w3m#Open(open_mode, url)
+
+      if s:isHttpURL(url)
+        call w3m#Open(open_mode, url)
+      else
+        call w3m#Open(open_mode, 'local', url)
+      endif
     endif
     return 1
   endif

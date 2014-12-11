@@ -176,6 +176,9 @@ ScreenShots
 
 HISTORY
 -------
+### v1.3.1 by yuratomo
+* #21 fix local href
+
 ### v1.3.0 by yuratomo
 * Support select element.
 

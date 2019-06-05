@@ -1300,7 +1300,7 @@ function! w3m#HitAHintStart()
       break
     endif
   endfor
-  cnoremap <buffer> <CR> <CR>:call w3m#Click(0)<CR>:call w3m#HitAHintEnd()<CR>
+  cnoremap <buffer> <CR> <CR>:call w3m#Click(0, 0)<CR>:call w3m#HitAHintEnd()<CR>
   cnoremap <buffer> <ESC> <ESC>:call w3m#HitAHintEnd()<CR>
   nnoremap <buffer> <ESC> <ESC>:call w3m#HitAHintEnd()<CR>
   call feedkeys('/@', 'n')
